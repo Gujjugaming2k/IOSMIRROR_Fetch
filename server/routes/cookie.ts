@@ -57,9 +57,9 @@ export const getTHash = async (): Promise<string | null> => {
 
 export const handleFetchCookie: RequestHandler = async (req, res) => {
   try {
-    const tHash = await getTHash();
-    if (tHash) {
-      res.json({ success: true, tHash });
+    const setCookieHeader = await getTHash();
+    if (setCookieHeader) {
+      res.json({ success: true, setCookieHeader });
     } else {
       res.status(500).json({ success: false, error: "Failed to fetch t_hash" });
     }
