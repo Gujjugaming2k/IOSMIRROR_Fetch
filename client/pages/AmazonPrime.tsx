@@ -74,6 +74,131 @@ export default function AmazonPrime() {
     }
   };
 
+  const handleFetchSeason = async (season: Season) => {
+    setSelectedSeason(season);
+    setEpisodesLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/episodes?seriesId=${encodeURIComponent(id)}&seasonId=${encodeURIComponent(season.id)}`,
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch episodes");
+      }
+
+      const fetchedEpisodes = result.episodes || [];
+      setEpisodes(fetchedEpisodes);
+
+      // Generate .strm files for single season
+      if (fetchedEpisodes.length > 0) {
+        await generateStrmFiles([
+          {
+            number: season.number,
+            id: season.id,
+            episodes: fetchedEpisodes,
+          },
+        ]);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch episodes. Please try again.",
+      );
+      setEpisodes([]);
+    } finally {
+      setEpisodesLoading(false);
+    }
+  };
+
+  const handleFetchAllSeasons = async () => {
+    if (!data?.seasons || data.seasons.length === 0) return;
+
+    setSelectedSeason(null);
+    setEpisodes([]);
+    setEpisodesLoading(true);
+
+    try {
+      const allEpisodes: Episode[] = [];
+      const seasonData: any[] = [];
+
+      for (const season of data.seasons) {
+        const response = await fetch(
+          `/api/episodes?seriesId=${encodeURIComponent(id)}&seasonId=${encodeURIComponent(season.id)}`,
+        );
+
+        const result = await response.json();
+
+        if (response.ok && result.episodes) {
+          allEpisodes.push(...result.episodes);
+          seasonData.push({
+            number: season.number,
+            id: season.id,
+            episodes: result.episodes,
+          });
+        }
+      }
+
+      setEpisodes(allEpisodes);
+
+      // Generate .strm files
+      if (seasonData.length > 0) {
+        await generateStrmFiles(seasonData);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch episodes. Please try again.",
+      );
+      setEpisodes([]);
+    } finally {
+      setEpisodesLoading(false);
+    }
+  };
+
+  const generateStrmFiles = async (seasonData: any[]) => {
+    try {
+      // Get prime token from localStorage
+      const primeToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("prime_token")
+          : null;
+
+      const response = await fetch("/api/generate-strm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          service: "amazon-prime",
+          seriesName: data?.title || "Unknown",
+          seriesId: id,
+          seasons: seasonData,
+          primeToken: primeToken || null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to generate .strm files");
+      }
+
+      setHistory([result, ...history]);
+      setShowHistory(true);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to generate .strm files. Please try again.",
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Animated background */}
