@@ -142,9 +142,12 @@ export const handleNetflix: RequestHandler = async (req, res) => {
         }
 
         console.log(
-          `Season ${season.number || index + 1}: episodeCount=${episodeCount}, raw fields:`,
-          Object.keys(season).slice(0, 10),
+          `Season ${season.number || index + 1}: episodeCount=${episodeCount}`,
         );
+        console.log(`  Available fields: ${Object.keys(season).join(", ")}`);
+        if (index === 0) {
+          console.log(`  Full first season data:`, JSON.stringify(season));
+        }
 
         return {
           id: season.id || season.sid || `${index + 1}`,
