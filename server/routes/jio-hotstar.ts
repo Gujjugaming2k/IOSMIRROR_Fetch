@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { getTHash } from "./cookie";
 
 interface JioHotstarAPIResponse {
   title: string;
