@@ -41,16 +41,20 @@ export default function AmazonPrime() {
 
       const jsonData = await response.json();
 
+      // Extract data from response
       const episodes = jsonData.episodes || [];
       const season = jsonData.season;
 
+      // Determine if it's a movie or series
       const category =
         !episodes || (Array.isArray(episodes) && episodes[0] === null) || !season
           ? "Movie"
           : "Series";
 
-      const languages = Array.isArray(jsonData.lang)
-        ? jsonData.lang.map((lang: any) => lang.l || lang).join(", ")
+      // Extract and format languages
+      const languagesArray = jsonData.lang || [];
+      const languages = Array.isArray(languagesArray)
+        ? languagesArray.map((lang: any) => (typeof lang === 'string' ? lang : lang.l || lang)).join(", ")
         : "";
 
       const result: PrimeData = {
