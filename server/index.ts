@@ -32,6 +32,7 @@ export function createServer() {
   app.get("/api/netflix", handleNetflix);
   app.get("/api/amazon-prime", handleAmazonPrime);
   app.get("/api/jio-hotstar", handleJioHotstar);
+  app.get("/api/episodes", handleEpisodes);
 
   return app;
 }
