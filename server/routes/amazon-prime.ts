@@ -24,9 +24,23 @@ export const handleAmazonPrime: RequestHandler = async (req, res) => {
   }
 
   try {
+    // Get the full Set-Cookie header
+    const setCookieHeader = await getTHash();
+
+    const fetchOptions: RequestInit = {
+      method: "GET",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        ...(setCookieHeader && { Cookie: setCookieHeader }),
+      },
+    };
+
     // TODO: Replace with actual Amazon Prime API endpoint
     const apiEndpoint = `https://api.example.com/amazon-prime?id=${encodeURIComponent(id)}`;
-    const response = await fetch(apiEndpoint);
+    const response = await fetch(apiEndpoint, fetchOptions);
 
     if (!response.ok) {
       return res
