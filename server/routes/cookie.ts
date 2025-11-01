@@ -78,7 +78,8 @@ export const handleCookieStatus: RequestHandler = async (req, res) => {
   res.json({
     status: tHash ? "success" : "failed",
     hasCookie: !!tHash,
-    cached: !!cachedCookieHeader && Date.now() - cacheTimestamp < CACHE_DURATION,
+    cached:
+      !!cachedCookieHeader && Date.now() - cacheTimestamp < CACHE_DURATION,
   });
 };
 
@@ -100,7 +101,8 @@ export const getPrimeToken = async (): Promise<string | null> => {
     }
 
     // Make request to get prime playlist
-    const url = "https://net51.cc/pv/playlist.php?id=0IOXQJ1CQWMH3Y1FNVUO30OSME&tm=1761932966";
+    const url =
+      "https://net51.cc/pv/playlist.php?id=0IOXQJ1CQWMH3Y1FNVUO30OSME&tm=1761932966";
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -154,7 +156,9 @@ export const handleFetchToken: RequestHandler = async (req, res) => {
     if (primeToken) {
       res.json({ success: true, primeToken });
     } else {
-      res.status(500).json({ success: false, error: "Failed to fetch prime token" });
+      res
+        .status(500)
+        .json({ success: false, error: "Failed to fetch prime token" });
     }
   } catch (error) {
     console.error("Token fetch error:", error);

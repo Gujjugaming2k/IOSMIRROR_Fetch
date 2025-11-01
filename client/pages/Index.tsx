@@ -309,7 +309,9 @@ export default function Index() {
               <div className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle2 className="w-5 h-5 text-amber-400" />
-                  <p className="text-amber-300 font-semibold">Prime Token Active</p>
+                  <p className="text-amber-300 font-semibold">
+                    Prime Token Active
+                  </p>
                 </div>
                 <div className="bg-slate-900/50 rounded p-3 mb-3 font-mono text-xs text-slate-300 relative">
                   <div className="pr-16 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
@@ -337,7 +339,8 @@ export default function Index() {
                   </div>
                 </div>
                 <p className="text-slate-400 text-xs">
-                  This token will be used for streaming API requests. Click "Fetch Prime Token" again to refresh.
+                  This token will be used for streaming API requests. Click
+                  "Fetch Prime Token" again to refresh.
                 </p>
               </div>
             )}

@@ -78,9 +78,7 @@ export const handleNetflix: RequestHandler = async (req, res) => {
       hasTitle: !!jsonData?.title,
       hasYear: !!jsonData?.year,
       hasSeason: !!jsonData?.season,
-      seasonCount: Array.isArray(jsonData?.season)
-        ? jsonData.season.length
-        : 0,
+      seasonCount: Array.isArray(jsonData?.season) ? jsonData.season.length : 0,
       firstSeasonKeys: Array.isArray(jsonData?.season)
         ? Object.keys(jsonData.season[0] || {})
         : [],

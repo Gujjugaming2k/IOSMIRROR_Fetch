@@ -716,9 +716,8 @@ export default function Netflix() {
               variant="outline"
               className="w-full border-slate-600 text-white hover:bg-slate-800 mt-6"
             >
-              {showHistory ? "Hide" : "Show"} Generation History ({
-                history.length
-              })
+              {showHistory ? "Hide" : "Show"} Generation History (
+              {history.length})
             </Button>
           )}
 

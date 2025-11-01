@@ -5,7 +5,11 @@ import { handleDemo } from "./routes/demo";
 import { handleNetflix } from "./routes/netflix";
 import { handleAmazonPrime } from "./routes/amazon-prime";
 import { handleJioHotstar } from "./routes/jio-hotstar";
-import { handleFetchCookie, handleCookieStatus, handleFetchToken } from "./routes/cookie";
+import {
+  handleFetchCookie,
+  handleCookieStatus,
+  handleFetchToken,
+} from "./routes/cookie";
 import { handleEpisodes } from "./routes/episodes";
 import {
   handleSaveStreaming,
