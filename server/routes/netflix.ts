@@ -27,9 +27,8 @@ export const handleNetflix: RequestHandler = async (req, res) => {
   }
 
   try {
-    // Get the full Set-Cookie header and extract just the cookie value
-    const setCookieHeader = await getTHash();
-    const cookieValue = setCookieHeader ? extractCookieValue(setCookieHeader) : null;
+    // Get all cookies formatted for the Cookie header
+    const cookieHeader = await getTHash();
 
     const fetchOptions: RequestInit = {
       method: "GET",
@@ -38,15 +37,15 @@ export const handleNetflix: RequestHandler = async (req, res) => {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Accept: "application/json",
         "Accept-Language": "en-US,en;q=0.9",
-        Referer: "https://net20.cc/",
-        ...(cookieValue && { Cookie: cookieValue }),
+        Referer: "https://net51.cc/",
+        ...(cookieHeader && { Cookie: cookieHeader }),
       },
     };
 
     console.log(
-      `Fetching Netflix data for ID: ${id}, with t_hash: ${cookieValue ? "yes" : "no"}`,
+      `Fetching Netflix data for ID: ${id}, with cookies: ${cookieHeader ? "yes" : "no"}`,
     );
-    console.log("Request Cookie header:", cookieValue || "none");
+    console.log("Request Cookie header length:", cookieHeader?.length || 0);
     const url = `https://net20.cc/post.php?id=${encodeURIComponent(id)}`;
     const response = await fetch(url, fetchOptions);
 
