@@ -162,17 +162,26 @@ export default function Index() {
                 </div>
                 <div className="bg-slate-900/50 rounded p-3 mb-3 font-mono text-xs text-slate-300 break-all relative">
                   {tHash}
-                  <button
-                    onClick={handleCopyCookie}
-                    className="absolute top-3 right-3 p-1 hover:bg-slate-800 rounded transition-colors"
-                    title="Copy to clipboard"
-                  >
-                    {copied ? (
-                      <Check className="w-4 h-4 text-green-400" />
-                    ) : (
-                      <Copy className="w-4 h-4 text-slate-400 hover:text-slate-300" />
-                    )}
-                  </button>
+                  <div className="absolute top-3 right-3 flex gap-2">
+                    <button
+                      onClick={handleCopyCookie}
+                      className="p-1 hover:bg-slate-800 rounded transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-slate-400 hover:text-slate-300" />
+                      )}
+                    </button>
+                    <button
+                      onClick={clearCookie}
+                      className="p-1 hover:bg-slate-800 rounded transition-colors"
+                      title="Clear cookie"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-400 hover:text-red-300" />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-slate-400 text-xs">
                   This cookie will be used for all API requests. Click "Fetch
