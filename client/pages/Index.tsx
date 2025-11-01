@@ -20,7 +20,21 @@ export default function Index() {
   const handleCopyCookie = async () => {
     if (tHash) {
       try {
-        await navigator.clipboard.writeText(tHash);
+        // Try Clipboard API first
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(tHash);
+        } else {
+          // Fallback for older browsers or restricted contexts
+          const textArea = document.createElement("textarea");
+          textArea.value = tHash;
+          textArea.style.position = "fixed";
+          textArea.style.left = "-999999px";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textArea);
+        }
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {
