@@ -24,9 +24,23 @@ export const handleJioHotstar: RequestHandler = async (req, res) => {
   }
 
   try {
+    // Get all cookies formatted for the Cookie header
+    const cookieHeader = await getTHash();
+
+    const fetchOptions: RequestInit = {
+      method: "GET",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        ...(cookieHeader && { Cookie: cookieHeader }),
+      },
+    };
+
     // TODO: Replace with actual JioHotstar API endpoint
     const apiEndpoint = `https://api.example.com/jio-hotstar?id=${encodeURIComponent(id)}`;
-    const response = await fetch(apiEndpoint);
+    const response = await fetch(apiEndpoint, fetchOptions);
 
     if (!response.ok) {
       return res

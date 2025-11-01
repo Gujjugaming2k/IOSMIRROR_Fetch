@@ -1,18 +1,24 @@
 import { RequestHandler } from "express";
 
-let cachedTHash: string | null = null;
+let cachedSetCookieHeaders: string[] | null = null;
+let cachedCookieHeader: string | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_DURATION = 3600000; // 1 hour in milliseconds
 
+// Combine all Set-Cookie headers into a single Cookie header string
+export const formatCookieHeader = (setCookieHeaders: string[]): string => {
+  return setCookieHeaders.join("; ");
+};
+
 export const getTHash = async (): Promise<string | null> => {
   // Return cached value if still valid
-  if (cachedTHash && Date.now() - cacheTimestamp < CACHE_DURATION) {
-    console.log("Using cached t_hash");
-    return cachedTHash;
+  if (cachedCookieHeader && Date.now() - cacheTimestamp < CACHE_DURATION) {
+    console.log("Using cached cookies");
+    return cachedCookieHeader;
   }
 
   try {
-    console.log("Fetching fresh t_hash from net51.cc");
+    console.log("Fetching fresh cookies from net51.cc");
     const response = await fetch("https://net51.cc/tv/p.php", {
       method: "GET",
       headers: {
@@ -23,40 +29,39 @@ export const getTHash = async (): Promise<string | null> => {
       },
     });
 
-    // Get the Set-Cookie header
-    const setCookieHeader = response.headers.get("set-cookie");
+    // Get all Set-Cookie headers
+    const setCookieHeaders = response.headers.getSetCookie?.() || [];
     console.log(
-      "Set-Cookie header:",
-      setCookieHeader ? setCookieHeader.substring(0, 100) : "not found",
+      "Set-Cookie headers count:",
+      setCookieHeaders.length,
+      setCookieHeaders.map((h) => h.substring(0, 100)),
     );
 
-    if (!setCookieHeader) {
-      console.error("No Set-Cookie header found");
+    if (setCookieHeaders.length === 0) {
+      console.error("No Set-Cookie headers found");
       return null;
     }
 
-    // Extract t_hash using regex pattern
-    const hashMatch = setCookieHeader.match(/t_hash=([^;]+)/);
-    if (hashMatch && hashMatch[1]) {
-      cachedTHash = hashMatch[1];
-      cacheTimestamp = Date.now();
-      console.log("Successfully extracted t_hash:", cachedTHash);
-      return cachedTHash;
-    }
+    // Store all cookies and format them for the Cookie header
+    cachedSetCookieHeaders = setCookieHeaders;
+    cachedCookieHeader = formatCookieHeader(setCookieHeaders);
+    cacheTimestamp = Date.now();
 
-    console.error("Could not extract t_hash from cookie");
-    return null;
+    console.log("Successfully stored all Set-Cookie headers");
+    console.log("Cookie header value:", cachedCookieHeader.substring(0, 200));
+
+    return cachedCookieHeader;
   } catch (error) {
-    console.error("Error fetching t_hash:", error);
+    console.error("Error fetching cookies:", error);
     return null;
   }
 };
 
 export const handleFetchCookie: RequestHandler = async (req, res) => {
   try {
-    const tHash = await getTHash();
-    if (tHash) {
-      res.json({ success: true, tHash });
+    const setCookieHeader = await getTHash();
+    if (setCookieHeader) {
+      res.json({ success: true, setCookieHeader });
     } else {
       res.status(500).json({ success: false, error: "Failed to fetch t_hash" });
     }

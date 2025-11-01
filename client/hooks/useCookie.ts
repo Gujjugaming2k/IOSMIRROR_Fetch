@@ -22,9 +22,9 @@ export function useCookie() {
       const response = await fetch("/api/fetch-cookie");
       const data = await response.json();
 
-      if (data.success && data.tHash) {
-        setTHash(data.tHash);
-        localStorage.setItem(COOKIE_STORAGE_KEY, data.tHash);
+      if (data.success && data.setCookieHeader) {
+        setTHash(data.setCookieHeader);
+        localStorage.setItem(COOKIE_STORAGE_KEY, data.setCookieHeader);
         return true;
       } else {
         const errorMsg = data.error || "Failed to fetch cookie";

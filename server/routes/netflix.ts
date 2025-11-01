@@ -1,6 +1,12 @@
 import { RequestHandler } from "express";
 import { getTHash } from "./cookie";
 
+interface Season {
+  id: string;
+  number: string;
+  episodeCount: number;
+}
+
 interface NetflixResponse {
   title: string;
   year: string;
@@ -15,7 +21,7 @@ interface NetflixResponse {
   quality: string;
   creator?: string;
   director?: string;
-  seasons?: number;
+  seasons?: Season[];
   contentWarning?: string;
 }
 
@@ -27,8 +33,8 @@ export const handleNetflix: RequestHandler = async (req, res) => {
   }
 
   try {
-    // Get the t_hash cookie first
-    const tHash = await getTHash();
+    // Get all cookies formatted for the Cookie header
+    const cookieHeader = await getTHash();
 
     const fetchOptions: RequestInit = {
       method: "GET",
@@ -37,19 +43,22 @@ export const handleNetflix: RequestHandler = async (req, res) => {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Accept: "application/json",
         "Accept-Language": "en-US,en;q=0.9",
-        Referer: "https://net20.cc/",
-        ...(tHash && { Cookie: `t_hash=${tHash}` }),
+        Referer: "https://net51.cc/",
+        ...(cookieHeader && { Cookie: cookieHeader }),
       },
     };
 
     console.log(
-      `Fetching Netflix data for ID: ${id}, with t_hash: ${tHash ? "yes" : "no"}`,
+      `Fetching Netflix data for ID: ${id}, with cookies: ${cookieHeader ? "yes" : "no"}`,
     );
+    console.log("Request Cookie header length:", cookieHeader?.length || 0);
     const url = `https://net20.cc/post.php?id=${encodeURIComponent(id)}`;
     const response = await fetch(url, fetchOptions);
 
     const text = await response.text();
-    console.log(`Response status: ${response.status}, length: ${text.length}`);
+    console.log(
+      `Response status: ${response.status}, length: ${text.length}, text: ${text.substring(0, 500)}`,
+    );
 
     if (!text) {
       return res.status(500).json({ error: "Empty response from API" });
@@ -93,6 +102,33 @@ export const handleNetflix: RequestHandler = async (req, res) => {
     // Get cast
     const castList = jsonData.short_cast || jsonData.cast || "Unknown";
 
+    // Process seasons with IDs and episode counts
+    let seasons: Season[] | undefined;
+    if (isSeriesData && Array.isArray(jsonData.season)) {
+      seasons = jsonData.season.map((season: any, index: number) => {
+        // Try multiple possible field names for episode count
+        let episodeCount = 0;
+
+        if (season.ep_count) {
+          episodeCount = parseInt(season.ep_count);
+        } else if (season.total_episodes) {
+          episodeCount = parseInt(season.total_episodes);
+        } else if (season.episode_count) {
+          episodeCount = parseInt(season.episode_count);
+        } else if (season.eps) {
+          episodeCount = parseInt(season.eps);
+        } else if (season.episodes && Array.isArray(season.episodes)) {
+          episodeCount = season.episodes.length;
+        }
+
+        return {
+          id: season.id || season.sid || `${index + 1}`,
+          number: season.num || season.number || `${index + 1}`,
+          episodeCount: episodeCount,
+        };
+      });
+    }
+
     const result: NetflixResponse = {
       title: jsonData.title || "Unknown",
       year: jsonData.year || "Unknown",
@@ -107,7 +143,7 @@ export const handleNetflix: RequestHandler = async (req, res) => {
       quality: jsonData.hdsd || "Unknown",
       creator: jsonData.creator || undefined,
       director: jsonData.director || undefined,
-      seasons: isSeriesData ? jsonData.season?.length : undefined,
+      seasons: seasons,
       contentWarning: jsonData.m_reason || undefined,
     };
 

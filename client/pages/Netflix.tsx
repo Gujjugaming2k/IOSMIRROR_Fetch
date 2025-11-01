@@ -12,8 +12,25 @@ import {
   Calendar,
   Users,
   Tag,
+  Play,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface Season {
+  id: string;
+  number: string;
+  episodeCount: number;
+}
+
+interface Episode {
+  id: string;
+  title: string;
+  season: string;
+  episode: string;
+  description: string;
+  completed: string;
+  duration: string;
+}
 
 interface NetflixData {
   title: string;
@@ -29,7 +46,7 @@ interface NetflixData {
   quality: string;
   creator?: string;
   director?: string;
-  seasons?: number;
+  seasons?: Season[];
   contentWarning?: string;
 }
 
@@ -38,6 +55,9 @@ export default function Netflix() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<NetflixData | null>(null);
+  const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [episodesLoading, setEpisodesLoading] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +70,8 @@ export default function Netflix() {
     setLoading(true);
     setError("");
     setData(null);
+    setSelectedSeason(null);
+    setEpisodes([]);
 
     try {
       const response = await fetch(`/api/netflix?id=${encodeURIComponent(id)}`);
@@ -69,6 +91,69 @@ export default function Netflix() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFetchSeason = async (season: Season) => {
+    setSelectedSeason(season);
+    setEpisodesLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/episodes?seriesId=${encodeURIComponent(id)}&seasonId=${encodeURIComponent(season.id)}`,
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch episodes");
+      }
+
+      setEpisodes(result.episodes || []);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch episodes. Please try again.",
+      );
+      setEpisodes([]);
+    } finally {
+      setEpisodesLoading(false);
+    }
+  };
+
+  const handleFetchAllSeasons = async () => {
+    if (!data?.seasons || data.seasons.length === 0) return;
+
+    setSelectedSeason(null);
+    setEpisodes([]);
+    setEpisodesLoading(true);
+
+    try {
+      const allEpisodes: Episode[] = [];
+
+      for (const season of data.seasons) {
+        const response = await fetch(
+          `/api/episodes?seriesId=${encodeURIComponent(id)}&seasonId=${encodeURIComponent(season.id)}`,
+        );
+
+        const result = await response.json();
+
+        if (response.ok && result.episodes) {
+          allEpisodes.push(...result.episodes);
+        }
+      }
+
+      setEpisodes(allEpisodes);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch episodes. Please try again.",
+      );
+      setEpisodes([]);
+    } finally {
+      setEpisodesLoading(false);
     }
   };
 
@@ -326,29 +411,144 @@ export default function Netflix() {
                   )}
 
                   {/* Seasons for Series */}
-                  {data.category === "Series" && data.seasons && (
-                    <div className="bg-slate-700/30 rounded-lg p-4">
-                      <p className="text-white font-semibold">
-                        📺 {data.seasons} Season{data.seasons !== 1 ? "s" : ""}{" "}
-                        Available
-                      </p>
-                    </div>
-                  )}
+                  {data.category === "Series" &&
+                    data.seasons &&
+                    data.seasons.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Tv className="w-5 h-5 text-slate-400" />
+                          <p className="text-slate-400 text-sm font-medium">
+                            SEASONS ({data.seasons.length})
+                          </p>
+                        </div>
+
+                        {/* Fetch All Seasons Button */}
+                        <div className="mb-4">
+                          <Button
+                            onClick={handleFetchAllSeasons}
+                            disabled={episodesLoading}
+                            className="w-full bg-gradient-to-r from-purple-600 to-purple-800 hover:opacity-90 text-white border-0"
+                          >
+                            {episodesLoading && !selectedSeason ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Fetching All Seasons...
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-4 h-4 mr-2" />
+                                Fetch All Seasons
+                              </>
+                            )}
+                          </Button>
+                        </div>
+
+                        {/* Individual Season Buttons */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {data.seasons.map((season) => (
+                            <Button
+                              key={season.id}
+                              onClick={() => handleFetchSeason(season)}
+                              disabled={episodesLoading}
+                              variant={
+                                selectedSeason?.id === season.id
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className={`${
+                                selectedSeason?.id === season.id
+                                  ? "bg-red-600 hover:bg-red-700 border-red-600 text-white"
+                                  : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                              }`}
+                            >
+                              {episodesLoading &&
+                              selectedSeason?.id === season.id ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                  {season.number}
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3 h-3 mr-1" />
+                                  Season {season.number}
+                                  <span className="ml-1 text-xs opacity-75">
+                                    ({season.episodeCount})
+                                  </span>
+                                </>
+                              )}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                 </div>
               </div>
 
-              {/* Search Again Button */}
-              <Button
-                onClick={() => {
-                  setId("");
-                  setData(null);
-                }}
-                variant="outline"
-                className="w-full border-slate-600 text-white hover:bg-slate-800"
-              >
-                Search Again
-              </Button>
+              {/* Episodes Section */}
+              {episodes.length > 0 && (
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-blue-500/30 shadow-lg shadow-blue-500/20">
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="bg-blue-500/20 rounded-full p-3">
+                      <Play className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white">
+                      {selectedSeason
+                        ? `Season ${selectedSeason.number} Episodes`
+                        : "All Episodes"}
+                    </h2>
+                  </div>
+
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {episodes.map((episode, idx) => (
+                      <div
+                        key={episode.id}
+                        className="bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700/70 transition-colors"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 bg-red-500/30 rounded-lg p-3 min-w-fit">
+                            <p className="text-red-300 font-bold text-sm">
+                              {episode.season}E{episode.episode}
+                            </p>
+                          </div>
+                          <div className="flex-grow">
+                            <h3 className="text-white font-semibold mb-1">
+                              {episode.title}
+                            </h3>
+                            <p className="text-slate-400 text-sm mb-2">
+                              {episode.description}
+                            </p>
+                            <div className="flex items-center gap-4 text-xs text-slate-500">
+                              <span>⏱️ {episode.duration}</span>
+                              {episode.completed === "1" && (
+                                <span className="text-green-400">
+                                  ✓ Watched
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+
+          {/* Search Again Button */}
+          {data && (
+            <Button
+              onClick={() => {
+                setId("");
+                setData(null);
+                setSelectedSeason(null);
+                setEpisodes([]);
+              }}
+              variant="outline"
+              className="w-full border-slate-600 text-white hover:bg-slate-800 mt-6"
+            >
+              Search Again
+            </Button>
           )}
 
           {/* Info Message */}

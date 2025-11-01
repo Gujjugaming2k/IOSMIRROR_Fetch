@@ -8,19 +8,53 @@ import {
   AlertCircle,
   Copy,
   Check,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCookie } from "@/hooks/useCookie";
 import { useState } from "react";
 
 export default function Index() {
-  const { tHash, loading, error, fetchCookie, hasCookie } = useCookie();
+  const { tHash, loading, error, fetchCookie, hasCookie, clearCookie } =
+    useCookie();
   const [copied, setCopied] = useState(false);
-  const handleCopyCookie = () => {
+  const handleCopyCookie = async () => {
     if (tHash) {
-      navigator.clipboard.writeText(tHash);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      let copied = false;
+
+      // Try Clipboard API first
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(tHash);
+          copied = true;
+        }
+      } catch (err) {
+        console.log("Clipboard API blocked, using fallback:", err);
+      }
+
+      // Fallback to execCommand if Clipboard API failed
+      if (!copied) {
+        try {
+          const textArea = document.createElement("textarea");
+          textArea.value = tHash;
+          textArea.style.position = "fixed";
+          textArea.style.left = "-999999px";
+          textArea.style.top = "-999999px";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          const success = document.execCommand("copy");
+          document.body.removeChild(textArea);
+          copied = success;
+        } catch (err) {
+          console.error("Fallback copy failed:", err);
+        }
+      }
+
+      if (copied) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     }
   };
 
@@ -159,19 +193,30 @@ export default function Index() {
                   <CheckCircle2 className="w-5 h-5 text-green-400" />
                   <p className="text-green-300 font-semibold">Cookie Active</p>
                 </div>
-                <div className="bg-slate-900/50 rounded p-3 mb-3 font-mono text-xs text-slate-300 break-all relative">
-                  {tHash}
-                  <button
-                    onClick={handleCopyCookie}
-                    className="absolute top-3 right-3 p-1 hover:bg-slate-800 rounded transition-colors"
-                    title="Copy to clipboard"
-                  >
-                    {copied ? (
-                      <Check className="w-4 h-4 text-green-400" />
-                    ) : (
-                      <Copy className="w-4 h-4 text-slate-400 hover:text-slate-300" />
-                    )}
-                  </button>
+                <div className="bg-slate-900/50 rounded p-3 mb-3 font-mono text-xs text-slate-300 relative">
+                  <div className="pr-16 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+                    {tHash}
+                  </div>
+                  <div className="absolute top-3 right-3 flex gap-2">
+                    <button
+                      onClick={handleCopyCookie}
+                      className="p-1 hover:bg-slate-800 rounded transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-slate-400 hover:text-slate-300" />
+                      )}
+                    </button>
+                    <button
+                      onClick={clearCookie}
+                      className="p-1 hover:bg-slate-800 rounded transition-colors"
+                      title="Clear cookie"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-400 hover:text-red-300" />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-slate-400 text-xs">
                   This cookie will be used for all API requests. Click "Fetch
