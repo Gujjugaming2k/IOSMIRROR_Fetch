@@ -159,12 +159,12 @@ export default function Index() {
             platforms
           </p>
 
-          {/* Fetch Cookie Button */}
-          <div className="max-w-md mx-auto mb-12">
-            {error && (
+          {/* Fetch Cookie and Token Buttons */}
+          <div className="max-w-2xl mx-auto mb-12 space-y-4">
+            {(error || tokenError) && (
               <div className="mb-4 bg-red-500/10 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {error}
+                {error || tokenError}
               </div>
             )}
             <Button
@@ -193,6 +193,35 @@ export default function Index() {
                 </>
               )}
             </Button>
+
+            {hasCookie && (
+              <Button
+                onClick={fetchToken}
+                disabled={tokenLoading}
+                className={`w-full py-6 text-lg font-semibold flex items-center justify-center gap-3 transition-all ${
+                  hasToken
+                    ? "bg-gradient-to-r from-amber-600 to-amber-700 hover:opacity-90 border-0"
+                    : "bg-gradient-to-r from-orange-600 to-orange-700 hover:opacity-90 border-0"
+                } text-white`}
+              >
+                {tokenLoading ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    Fetching Token...
+                  </>
+                ) : hasToken ? (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    Token Ready ✓
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-5 h-5" />
+                    Fetch Prime Token
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
