@@ -481,18 +481,67 @@ export default function Netflix() {
                 </div>
               </div>
 
-              {/* Search Again Button */}
-              <Button
-                onClick={() => {
-                  setId("");
-                  setData(null);
-                }}
-                variant="outline"
-                className="w-full border-slate-600 text-white hover:bg-slate-800"
-              >
-                Search Again
-              </Button>
+              {/* Episodes Section */}
+              {episodes.length > 0 && (
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-blue-500/30 shadow-lg shadow-blue-500/20">
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="bg-blue-500/20 rounded-full p-3">
+                      <Play className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white">
+                      {selectedSeason ? `Season ${selectedSeason.number} Episodes` : "All Episodes"}
+                    </h2>
+                  </div>
+
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {episodes.map((episode, idx) => (
+                      <div
+                        key={episode.id}
+                        className="bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700/70 transition-colors"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 bg-red-500/30 rounded-lg p-3 min-w-fit">
+                            <p className="text-red-300 font-bold text-sm">
+                              {episode.season}E{episode.episode}
+                            </p>
+                          </div>
+                          <div className="flex-grow">
+                            <h3 className="text-white font-semibold mb-1">
+                              {episode.title}
+                            </h3>
+                            <p className="text-slate-400 text-sm mb-2">
+                              {episode.description}
+                            </p>
+                            <div className="flex items-center gap-4 text-xs text-slate-500">
+                              <span>⏱️ {episode.duration}</span>
+                              {episode.completed === "1" && (
+                                <span className="text-green-400">✓ Watched</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+
+          {/* Search Again Button */}
+          {data && (
+            <Button
+              onClick={() => {
+                setId("");
+                setData(null);
+                setSelectedSeason(null);
+                setEpisodes([]);
+              }}
+              variant="outline"
+              className="w-full border-slate-600 text-white hover:bg-slate-800 mt-6"
+            >
+              Search Again
+            </Button>
           )}
 
           {/* Info Message */}
