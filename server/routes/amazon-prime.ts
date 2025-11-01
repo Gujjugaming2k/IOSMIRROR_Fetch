@@ -6,7 +6,8 @@ interface AmazonPrimeAPIResponse {
   year: number | string;
   lang: Array<{ l: string } | string>;
   episodes?: any[];
-  season?: string;
+  season?: any;
+  [key: string]: any;
 }
 
 interface AmazonPrimeResponse {
@@ -34,39 +35,110 @@ export const handleAmazonPrime: RequestHandler = async (req, res) => {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Accept: "application/json",
         "Accept-Language": "en-US,en;q=0.9",
+        Referer: "https://net51.cc/",
         ...(cookieHeader && { Cookie: cookieHeader }),
       },
     };
 
-    // TODO: Replace with actual Amazon Prime API endpoint
-    const apiEndpoint = `https://api.example.com/amazon-prime?id=${encodeURIComponent(id)}`;
-    const response = await fetch(apiEndpoint, fetchOptions);
+    // Use the same scraping approach as Netflix but targeting net20.cc/pv/post.php
+    const url = `https://net20.cc/pv/post.php?id=${encodeURIComponent(id)}`;
+    const response = await fetch(url, fetchOptions);
 
-    if (!response.ok) {
-      return res
-        .status(response.status)
-        .json({ error: "Failed to fetch data from Amazon Prime API" });
+    const text = await response.text();
+
+    if (!text) {
+      return res.status(500).json({ error: "Empty response from API" });
     }
 
-    const jsonData: AmazonPrimeAPIResponse = await response.json();
-
-    // Extract data from response
-    const episodes = jsonData.episodes || [];
-    const season = jsonData.season;
+    let jsonData: any;
+    try {
+      jsonData = JSON.parse(text);
+    } catch (e) {
+      console.error("Amazon parse error:", e, "Text:", text.substring(0, 300));
+      return res.status(500).json({ error: "Invalid JSON response from API" });
+    }
 
     // Determine if it's a movie or series
-    const category =
-      !episodes || (Array.isArray(episodes) && episodes[0] === null) || !season
-        ? "Movie"
-        : "Series";
+    const isSeriesData =
+      Array.isArray(jsonData.season) && jsonData.season.length > 0;
+    const category = isSeriesData ? "Series" : "Movie";
 
-    // Extract and format languages
+    // Extract languages
     const languagesArray = jsonData.lang || [];
     const languages = Array.isArray(languagesArray)
       ? languagesArray
           .map((lang) => (typeof lang === "string" ? lang : lang.l || lang))
           .join(", ")
-      : "";
+      : "Unknown";
+
+    // Process seasons similarly to Netflix parsing to provide IDs and counts
+    let seasons: any[] | undefined;
+    if (isSeriesData && Array.isArray(jsonData.season)) {
+      seasons = await Promise.all(
+        jsonData.season.map(async (season: any, index: number) => {
+          let episodeCount = 0;
+          const countValue =
+            season.ep_count ||
+            season.total_episodes ||
+            season.episode_count ||
+            season.eps ||
+            season.epCount ||
+            season.episodes_count ||
+            season.episode_count_total ||
+            season.totalEpisodes ||
+            season.count;
+
+          if (countValue) {
+            const parsed = parseInt(String(countValue), 10);
+            if (!isNaN(parsed) && parsed > 0) {
+              episodeCount = parsed;
+            }
+          }
+
+          if (
+            episodeCount === 0 &&
+            season.episodes &&
+            Array.isArray(season.episodes)
+          ) {
+            episodeCount = season.episodes.length;
+          }
+
+          // If still no count, try fetching episodes from the PV episodes endpoint
+          if (episodeCount === 0) {
+            try {
+              const seasonId = season.id || season.sid || `${index + 1}`;
+              const episodeUrl = `https://net51.cc/pv/episodes.php?s=${encodeURIComponent(seasonId)}&series=${encodeURIComponent(id)}`;
+              const episodeResponse = await fetch(episodeUrl, {
+                method: "GET",
+                headers: fetchOptions.headers,
+              });
+              const episodeText = await episodeResponse.text();
+              if (episodeText) {
+                try {
+                  const episodeData = JSON.parse(episodeText);
+                  if (
+                    episodeData.episodes &&
+                    Array.isArray(episodeData.episodes)
+                  ) {
+                    episodeCount = episodeData.episodes.length;
+                  }
+                } catch (e) {
+                  // ignore
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+
+          return {
+            id: season.id || season.sid || `${index + 1}`,
+            number: season.num || season.number || `${index + 1}`,
+            episodeCount,
+          };
+        }),
+      );
+    }
 
     const result: AmazonPrimeResponse = {
       title: jsonData.title || "Unknown",
@@ -75,7 +147,13 @@ export const handleAmazonPrime: RequestHandler = async (req, res) => {
       category,
     };
 
-    res.json(result);
+    // Attach seasons if we found them
+    if (seasons) {
+      // @ts-ignore
+      (result as any).seasons = seasons;
+    }
+
+    res.status(200).json(result);
   } catch (error) {
     console.error("Amazon Prime API error:", error);
     res.status(500).json({ error: "Failed to fetch data. Please try again." });

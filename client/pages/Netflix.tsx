@@ -53,11 +53,12 @@ interface NetflixData {
 
 interface StrmGenerationResult {
   success: boolean;
-  seriesName: string;
-  seriesId: string;
-  totalSeasonsProcessed: number;
-  totalFilesCreated: number;
-  seasons: Array<{
+  // Series fields
+  seriesName?: string;
+  seriesId?: string;
+  totalSeasonsProcessed?: number;
+  totalFilesCreated?: number;
+  seasons?: Array<{
     seasonNumber: string;
     totalEpisodes: number;
     folderPath: string;
@@ -67,6 +68,15 @@ interface StrmGenerationResult {
       streamUrl: string;
     }>;
   }>;
+  // Movie fields
+  movieName?: string;
+  movieId?: string;
+  folderPath?: string;
+  file?: {
+    fileName: string;
+    filePath: string;
+    streamUrl: string;
+  };
   generatedAt: string;
 }
 

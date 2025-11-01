@@ -42,7 +42,15 @@ export const handleEpisodes: RequestHandler = async (req, res) => {
       `Fetching episodes for seriesId: ${seriesId}, seasonId: ${seasonId}`,
     );
 
-    const url = `https://net51.cc/episodes.php?s=${encodeURIComponent(seasonId)}&series=${encodeURIComponent(seriesId)}`;
+    // Use pv path for amazon-prime when requested
+    const service =
+      typeof req.query.service === "string" ? req.query.service : undefined;
+    let episodesDomain = "https://net51.cc/episodes.php";
+    if (service === "amazon-prime")
+      episodesDomain = "https://net51.cc/pv/episodes.php";
+    if (service === "jio-hotstar")
+      episodesDomain = "https://net51.cc/mobile/hs/episodes.php";
+    const url = `${episodesDomain}?s=${encodeURIComponent(seasonId)}&series=${encodeURIComponent(seriesId)}`;
     const response = await fetch(url, fetchOptions);
 
     const text = await response.text();

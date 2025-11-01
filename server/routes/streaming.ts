@@ -38,13 +38,26 @@ const generateFolderPath = (
 const generateStrmContent = (
   episode: any,
   primeToken?: string | null,
+  service: string = "netflix",
 ): string => {
   const episodeId = episode.id;
   // Use provided prime token or fall back to hardcoded token
-  const token =
+  let token =
     primeToken ||
     "in=1df163a49286a7c854f2b07e8a995bfa::913b431120b4fd2ec3d4bfd587867697::1761993038::ni";
-  return `https://iosmirror.vflix.life/api/stream-proxy?url=https://net51.cc/hls/${episodeId}.m3u8?${token}&referer=https%3A%2F%2Fnet51.cc`;
+
+  // Normalize the final segment to 'ni' when a token is provided
+  if (primeToken) {
+    token = token.replace(/::[a-zA-Z]+$/i, "::ni");
+  }
+
+  // Determine correct path segment for service
+  const baseDomain = "net51.cc";
+  let pathSegment = "hls";
+  if (service === "amazon-prime") pathSegment = "pv/hls";
+  if (service === "jio-hotstar") pathSegment = "mobile/hs/hls";
+
+  return `https://iosmirror.vflix.life/api/stream-proxy?url=https://${baseDomain}/${pathSegment}/${episodeId}.m3u8?${token}&referer=https%3A%2F%2Fnet51.cc`;
 };
 
 // Ensure directory exists (create if not)
@@ -59,6 +72,7 @@ const writeStrmFiles = (
   folderPath: string,
   episodes: any[],
   primeToken?: string | null,
+  service: string = "netflix",
 ): Array<{ fileName: string; filePath: string; streamUrl: string }> => {
   ensureDirectoryExists(folderPath);
 
@@ -66,7 +80,7 @@ const writeStrmFiles = (
     const episodeNumber = episode.episode.split("E")[1] || `${index + 1}`;
     const fileName = `E${episodeNumber}.strm`;
     const filePath = path.join(folderPath, fileName);
-    const content = generateStrmContent(episode, primeToken);
+    const content = generateStrmContent(episode, primeToken, service);
 
     fs.writeFileSync(filePath, content, "utf-8");
 
@@ -93,7 +107,7 @@ export const handleSaveStreaming: RequestHandler = async (req, res) => {
     const strmFiles = episodes.map((episode: any, index: number) => {
       const episodeNumber = episode.episode.split("E")[1] || `${index + 1}`;
       const fileName = `E${episodeNumber}.strm`;
-      const content = generateStrmContent(episode, primeToken);
+      const content = generateStrmContent(episode, primeToken, service);
       return {
         fileName,
         path: `${folderPath}/${fileName}`,
@@ -111,7 +125,7 @@ export const handleSaveStreaming: RequestHandler = async (req, res) => {
         id: ep.id,
         title: ep.title,
         episode: ep.episode,
-        streamUrl: generateStrmContent(ep, primeToken),
+        streamUrl: generateStrmContent(ep, primeToken, service),
       })),
       savedAt: new Date().toISOString(),
       folderPath,
@@ -205,9 +219,20 @@ export const handleGenerateMovie: RequestHandler = async (req, res) => {
     try {
       ensureDirectoryExists(moviesFolder);
 
-      const fileName = `${movieId}.strm`;
+      const sanitizeFileName = (name: string) =>
+        name
+          .trim()
+          .replace(/[\\/:*?"<>|]/g, "")
+          .replace(/\s+/g, " ");
+
+      const safeMovieName = sanitizeFileName(movieName);
+      const fileName = `${safeMovieName}.strm`;
       const filePath = path.join(moviesFolder, fileName);
-      const streamUrl = generateStrmContent({ id: movieId }, primeToken);
+      const streamUrl = generateStrmContent(
+        { id: movieId },
+        primeToken,
+        service,
+      );
 
       fs.writeFileSync(filePath, streamUrl, "utf-8");
 
@@ -266,6 +291,7 @@ export const handleGenerateStrm: RequestHandler = async (req, res) => {
           folderPath,
           season.episodes,
           primeToken,
+          service,
         );
 
         allFiles.push(...createdFiles);

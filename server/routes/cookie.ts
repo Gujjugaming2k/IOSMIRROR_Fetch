@@ -130,8 +130,8 @@ export const getPrimeToken = async (): Promise<string | null> => {
           );
           if (match) {
             let tokenValue = match[1];
-            // Replace the last "su" with "ni"
-            tokenValue = tokenValue.replace(/::su$/, "::ni");
+            // Normalize the final segment to 'ni' (replace ::su, ::es, etc.)
+            tokenValue = tokenValue.replace(/::[a-zA-Z]+$/i, "::ni");
             const primeToken = `in=${tokenValue}`;
             cachedPrimeToken = primeToken;
             tokenCacheTimestamp = Date.now();

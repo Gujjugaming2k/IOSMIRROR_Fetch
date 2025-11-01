@@ -2,14 +2,40 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search, AlertCircle, Loader2, Check } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  AlertCircle,
+  Loader2,
+  Check,
+  Play,
+  Tv,
+  Film,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useCookie } from "@/hooks/useCookie";
+import { useToken } from "@/hooks/useToken";
+import { useEffect } from "react";
+
+interface Season {
+  id: string;
+  number: string;
+  episodeCount: number;
+}
+
+interface Episode {
+  id: string;
+  title: string;
+  season: string;
+  episode: string;
+}
 
 interface PrimeData {
   title: string;
   year: string;
   languages: string;
   category: "Movie" | "Series";
+  seasons?: Season[];
 }
 
 export default function AmazonPrime() {
@@ -17,6 +43,42 @@ export default function AmazonPrime() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<PrimeData | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [episodesLoading, setEpisodesLoading] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Cookie/token hooks (auto-fetch to improve UX)
+  const {
+    tHash,
+    loading: cookieLoading,
+    error: cookieError,
+    fetchCookie,
+    hasCookie,
+  } = useCookie();
+  const {
+    primeToken,
+    loading: tokenLoading,
+    error: tokenError,
+    fetchToken,
+    hasToken,
+  } = useToken();
+
+  useEffect(() => {
+    // If no cookie, fetch it; once cookie present, fetch token if missing
+    (async () => {
+      if (!hasCookie) {
+        await fetchCookie();
+      }
+      if (hasCookie && !hasToken) {
+        await fetchToken();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +115,131 @@ export default function AmazonPrime() {
     }
   };
 
+  const handleFetchSeason = async (season: Season) => {
+    setSelectedSeason(season);
+    setEpisodesLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/episodes?seriesId=${encodeURIComponent(id)}&seasonId=${encodeURIComponent(season.id)}&service=amazon-prime`,
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch episodes");
+      }
+
+      const fetchedEpisodes = result.episodes || [];
+      setEpisodes(fetchedEpisodes);
+
+      // Generate .strm files for single season
+      if (fetchedEpisodes.length > 0) {
+        await generateStrmFiles([
+          {
+            number: season.number,
+            id: season.id,
+            episodes: fetchedEpisodes,
+          },
+        ]);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch episodes. Please try again.",
+      );
+      setEpisodes([]);
+    } finally {
+      setEpisodesLoading(false);
+    }
+  };
+
+  const handleFetchAllSeasons = async () => {
+    if (!data?.seasons || data.seasons.length === 0) return;
+
+    setSelectedSeason(null);
+    setEpisodes([]);
+    setEpisodesLoading(true);
+
+    try {
+      const allEpisodes: Episode[] = [];
+      const seasonData: any[] = [];
+
+      for (const season of data.seasons) {
+        const response = await fetch(
+          `/api/episodes?seriesId=${encodeURIComponent(id)}&seasonId=${encodeURIComponent(season.id)}&service=amazon-prime`,
+        );
+
+        const result = await response.json();
+
+        if (response.ok && result.episodes) {
+          allEpisodes.push(...result.episodes);
+          seasonData.push({
+            number: season.number,
+            id: season.id,
+            episodes: result.episodes,
+          });
+        }
+      }
+
+      setEpisodes(allEpisodes);
+
+      // Generate .strm files
+      if (seasonData.length > 0) {
+        await generateStrmFiles(seasonData);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch episodes. Please try again.",
+      );
+      setEpisodes([]);
+    } finally {
+      setEpisodesLoading(false);
+    }
+  };
+
+  const generateStrmFiles = async (seasonData: any[]) => {
+    try {
+      // Get prime token from localStorage
+      const primeToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("prime_token")
+          : null;
+
+      const response = await fetch("/api/generate-strm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          service: "amazon-prime",
+          seriesName: data?.title || "Unknown",
+          seriesId: id,
+          seasons: seasonData,
+          primeToken: primeToken || null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to generate .strm files");
+      }
+
+      setHistory([result, ...history]);
+      setShowHistory(true);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to generate .strm files. Please try again.",
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Animated background */}
@@ -82,15 +269,6 @@ export default function AmazonPrime() {
 
         {/* Main Content */}
         <div className="max-w-2xl mx-auto px-6 py-12">
-          {/* API Configuration Notice */}
-          <Alert className="mb-8 bg-blue-500/10 border-blue-500/50">
-            <AlertCircle className="h-5 w-5 text-blue-500" />
-            <AlertDescription className="text-blue-200 ml-3">
-              Amazon Prime API endpoint needs to be configured. Please provide
-              the API URL.
-            </AlertDescription>
-          </Alert>
-
           {/* Search Form */}
           <form onSubmit={handleSearch} className="mb-12">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700">
@@ -210,6 +388,176 @@ export default function AmazonPrime() {
                   </div>
                 </div>
               </div>
+
+              {/* Fetch Movie Button for Movies */}
+              {data.category === "Movie" && (
+                <div className="mt-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Play className="w-5 h-5 text-slate-400" />
+                    <p className="text-slate-400 text-sm font-medium">
+                      STREAMING
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={async () => {
+                      if (!data?.title) return;
+                      setGenerating(true);
+                      setSuccessMsg("");
+                      setError("");
+                      try {
+                        const primeToken =
+                          typeof window !== "undefined"
+                            ? localStorage.getItem("prime_token")
+                            : null;
+
+                        const response = await fetch("/api/generate-movie", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            service: "amazon-prime",
+                            movieName: data.title,
+                            movieId: id,
+                            primeToken: primeToken || null,
+                          }),
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok)
+                          throw new Error(
+                            result.error || "Failed to generate movie file",
+                          );
+
+                        setSuccessMsg(
+                          `Generated ${result.file?.fileName || "file"} in ${result.folderPath || "Movies folder"}`,
+                        );
+                      } catch (err) {
+                        setError(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to generate movie file. Please try again.",
+                        );
+                      } finally {
+                        setGenerating(false);
+                      }
+                    }}
+                    disabled={generating}
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:opacity-90 text-white border-0"
+                  >
+                    {generating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                        Generating Movie File...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" /> Fetch Movie
+                      </>
+                    )}
+                  </Button>
+
+                  {successMsg && (
+                    <Alert className="mt-4 bg-green-500/10 border-green-500/50">
+                      <AlertDescription className="text-green-200 ml-3">
+                        {successMsg}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              )}
+
+              {/* Seasons for Series */}
+              {data.category === "Series" &&
+                data.seasons &&
+                data.seasons.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Tv className="w-5 h-5 text-slate-400" />
+                      <p className="text-slate-400 text-sm font-medium">
+                        SEASONS ({data.seasons.length})
+                      </p>
+                    </div>
+
+                    {/* Fetch All Seasons Button */}
+                    <div className="mb-4">
+                      <Button
+                        onClick={handleFetchAllSeasons}
+                        disabled={episodesLoading}
+                        className="w-full bg-gradient-to-r from-purple-600 to-purple-800 hover:opacity-90 text-white border-0"
+                      >
+                        {episodesLoading && !selectedSeason ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                            Fetching All Seasons...
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4 mr-2" /> Fetch All Seasons
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Individual Season Buttons */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {data.seasons.map((season) => (
+                        <Button
+                          key={season.id}
+                          onClick={() => handleFetchSeason(season)}
+                          disabled={episodesLoading}
+                          variant={
+                            selectedSeason?.id === season.id
+                              ? "default"
+                              : "outline"
+                          }
+                          className={`${
+                            selectedSeason?.id === season.id
+                              ? "bg-red-600 hover:bg-red-700 border-red-600 text-white"
+                              : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                          }`}
+                        >
+                          Season {season.number} ({season.episodeCount ?? 0}{" "}
+                          eps)
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Episodes Grid */}
+                    {episodes.length > 0 && (
+                      <div className="mt-4">
+                        <div className="bg-slate-700/30 rounded-lg p-4 mb-6">
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-slate-400 text-xs font-medium mb-1">
+                                TOTAL EPISODES
+                              </p>
+                              <p className="text-2xl font-bold text-green-400">
+                                {episodes.length}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {episodes.map((ep) => (
+                            <div
+                              key={ep.id}
+                              className="bg-slate-800/50 rounded p-3 text-center"
+                            >
+                              <p className="text-sm font-bold text-white">
+                                {ep.title}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {ep.episode}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
               {/* Search Again Button */}
               <Button
