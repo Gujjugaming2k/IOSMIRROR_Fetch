@@ -50,6 +50,25 @@ interface NetflixData {
   contentWarning?: string;
 }
 
+interface StrmGenerationResult {
+  success: boolean;
+  seriesName: string;
+  seriesId: string;
+  totalSeasonsProcessed: number;
+  totalFilesCreated: number;
+  seasons: Array<{
+    seasonNumber: string;
+    totalEpisodes: number;
+    folderPath: string;
+    files: Array<{
+      fileName: string;
+      filePath: string;
+      streamUrl: string;
+    }>;
+  }>;
+  generatedAt: string;
+}
+
 export default function Netflix() {
   const [id, setId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,6 +77,8 @@ export default function Netflix() {
   const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
+  const [history, setHistory] = useState<StrmGenerationResult[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
