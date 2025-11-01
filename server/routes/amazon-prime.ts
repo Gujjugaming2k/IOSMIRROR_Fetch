@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { getTHash, extractCookieValue } from "./cookie";
+import { getTHash } from "./cookie";
 
 interface AmazonPrimeAPIResponse {
   title: string;
