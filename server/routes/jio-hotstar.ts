@@ -24,9 +24,8 @@ export const handleJioHotstar: RequestHandler = async (req, res) => {
   }
 
   try {
-    // Get the full Set-Cookie header and extract just the cookie value
-    const setCookieHeader = await getTHash();
-    const cookieValue = setCookieHeader ? extractCookieValue(setCookieHeader) : null;
+    // Get all cookies formatted for the Cookie header
+    const cookieHeader = await getTHash();
 
     const fetchOptions: RequestInit = {
       method: "GET",
@@ -35,7 +34,7 @@ export const handleJioHotstar: RequestHandler = async (req, res) => {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Accept: "application/json",
         "Accept-Language": "en-US,en;q=0.9",
-        ...(cookieValue && { Cookie: cookieValue }),
+        ...(cookieHeader && { Cookie: cookieHeader }),
       },
     };
 
