@@ -68,6 +68,46 @@ export default function Index() {
     }
   };
 
+  const handleCopyToken = async () => {
+    if (primeToken) {
+      let copied = false;
+
+      // Try Clipboard API first
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(primeToken);
+          copied = true;
+        }
+      } catch (err) {
+        console.log("Clipboard API blocked, using fallback:", err);
+      }
+
+      // Fallback to execCommand if Clipboard API failed
+      if (!copied) {
+        try {
+          const textArea = document.createElement("textarea");
+          textArea.value = primeToken;
+          textArea.style.position = "fixed";
+          textArea.style.left = "-999999px";
+          textArea.style.top = "-999999px";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          const success = document.execCommand("copy");
+          document.body.removeChild(textArea);
+          copied = success;
+        } catch (err) {
+          console.error("Fallback copy failed:", err);
+        }
+      }
+
+      if (copied) {
+        setTokenCopied(true);
+        setTimeout(() => setTokenCopied(false), 2000);
+      }
+    }
+  };
+
   const services = [
     {
       id: "netflix",
