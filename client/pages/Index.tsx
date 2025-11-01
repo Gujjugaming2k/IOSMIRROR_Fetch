@@ -17,11 +17,15 @@ import { useState } from "react";
 export default function Index() {
   const { tHash, loading, error, fetchCookie, hasCookie, clearCookie } = useCookie();
   const [copied, setCopied] = useState(false);
-  const handleCopyCookie = () => {
+  const handleCopyCookie = async () => {
     if (tHash) {
-      navigator.clipboard.writeText(tHash);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      try {
+        await navigator.clipboard.writeText(tHash);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error("Failed to copy:", err);
+      }
     }
   };
 
