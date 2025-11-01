@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCookie } from "@/hooks/useCookie";
+import { useToken } from "@/hooks/useToken";
 import { useState } from "react";
 
 export default function Index() {
