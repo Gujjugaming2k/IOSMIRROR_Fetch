@@ -82,14 +82,6 @@ export default function AmazonPrime() {
 
         {/* Main Content */}
         <div className="max-w-2xl mx-auto px-6 py-12">
-          {/* API Configuration Notice */}
-          <Alert className="mb-8 bg-blue-500/10 border-blue-500/50">
-            <AlertCircle className="h-5 w-5 text-blue-500" />
-            <AlertDescription className="text-blue-200 ml-3">
-              Amazon Prime API endpoint needs to be configured. Please provide
-              the API URL.
-            </AlertDescription>
-          </Alert>
 
           {/* Search Form */}
           <form onSubmit={handleSearch} className="mb-12">
