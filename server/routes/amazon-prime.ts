@@ -68,12 +68,87 @@ export const handleAmazonPrime: RequestHandler = async (req, res) => {
       ? languagesArray.map((lang) => (typeof lang === "string" ? lang : lang.l || lang)).join(", ")
       : "Unknown";
 
+    // Process seasons similarly to Netflix parsing to provide IDs and counts
+    let seasons: any[] | undefined;
+    if (isSeriesData && Array.isArray(jsonData.season)) {
+      seasons = await Promise.all(
+        jsonData.season.map(async (season: any, index: number) => {
+          let episodeCount = 0;
+          const countValue =
+            season.ep_count ||
+            season.total_episodes ||
+            season.episode_count ||
+            season.eps ||
+            season.epCount ||
+            season.episodes_count ||
+            season.episode_count_total ||
+            season.totalEpisodes ||
+            season.count;
+
+          if (countValue) {
+            const parsed = parseInt(String(countValue), 10);
+            if (!isNaN(parsed) && parsed > 0) {
+              episodeCount = parsed;
+            }
+          }
+
+          if (
+            episodeCount === 0 &&
+            season.episodes &&
+            Array.isArray(season.episodes)
+          ) {
+            episodeCount = season.episodes.length;
+          }
+
+          // If still no count, try fetching episodes from the PV episodes endpoint
+          if (episodeCount === 0) {
+            try {
+              const seasonId = season.id || season.sid || `${index + 1}`;
+              const episodeUrl = `https://net51.cc/pv/episodes.php?s=${encodeURIComponent(seasonId)}&series=${encodeURIComponent(id)}`;
+              const episodeResponse = await fetch(episodeUrl, {
+                method: "GET",
+                headers: fetchOptions.headers,
+              });
+              const episodeText = await episodeResponse.text();
+              if (episodeText) {
+                try {
+                  const episodeData = JSON.parse(episodeText);
+                  if (
+                    episodeData.episodes &&
+                    Array.isArray(episodeData.episodes)
+                  ) {
+                    episodeCount = episodeData.episodes.length;
+                  }
+                } catch (e) {
+                  // ignore
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+
+          return {
+            id: season.id || season.sid || `${index + 1}`,
+            number: season.num || season.number || `${index + 1}`,
+            episodeCount,
+          };
+        }),
+      );
+    }
+
     const result: AmazonPrimeResponse = {
       title: jsonData.title || "Unknown",
       year: (jsonData.year || "Unknown").toString(),
       languages: languages || "Unknown",
       category,
     };
+
+    // Attach seasons if we found them
+    if (seasons) {
+      // @ts-ignore
+      (result as any).seasons = seasons;
+    }
 
     res.status(200).json(result);
   } catch (error) {
