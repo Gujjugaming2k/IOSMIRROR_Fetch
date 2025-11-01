@@ -55,6 +55,9 @@ export default function Netflix() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<NetflixData | null>(null);
+  const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [episodesLoading, setEpisodesLoading] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
