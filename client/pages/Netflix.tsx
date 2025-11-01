@@ -70,6 +70,8 @@ export default function Netflix() {
     setLoading(true);
     setError("");
     setData(null);
+    setSelectedSeason(null);
+    setEpisodes([]);
 
     try {
       const response = await fetch(`/api/netflix?id=${encodeURIComponent(id)}`);
@@ -89,6 +91,69 @@ export default function Netflix() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFetchSeason = async (season: Season) => {
+    setSelectedSeason(season);
+    setEpisodesLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/episodes?seriesId=${encodeURIComponent(id)}&seasonId=${encodeURIComponent(season.id)}`,
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch episodes");
+      }
+
+      setEpisodes(result.episodes || []);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch episodes. Please try again.",
+      );
+      setEpisodes([]);
+    } finally {
+      setEpisodesLoading(false);
+    }
+  };
+
+  const handleFetchAllSeasons = async () => {
+    if (!data?.seasons || data.seasons.length === 0) return;
+
+    setSelectedSeason(null);
+    setEpisodes([]);
+    setEpisodesLoading(true);
+
+    try {
+      const allEpisodes: Episode[] = [];
+
+      for (const season of data.seasons) {
+        const response = await fetch(
+          `/api/episodes?seriesId=${encodeURIComponent(id)}&seasonId=${encodeURIComponent(season.id)}`,
+        );
+
+        const result = await response.json();
+
+        if (response.ok && result.episodes) {
+          allEpisodes.push(...result.episodes);
+        }
+      }
+
+      setEpisodes(allEpisodes);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch episodes. Please try again.",
+      );
+      setEpisodes([]);
+    } finally {
+      setEpisodesLoading(false);
     }
   };
 
