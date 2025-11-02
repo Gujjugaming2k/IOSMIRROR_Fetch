@@ -19,7 +19,7 @@ import {
   handleGenerateMovie,
 } from "./routes/streaming";
 import { handleGetSettings, handleUpdateSettings } from "./routes/settings";
-import { handleNet51Top10 } from "./routes/net51";
+import { handleGetCachedTop10, handleRefreshTop10, handleMarkTop10 } from "./routes/net51";
 
 export function createServer() {
   const app = express();
