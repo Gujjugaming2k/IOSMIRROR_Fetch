@@ -628,6 +628,41 @@ export default function Netflix() {
             )}
           </div>
 
+          {/* All Posters (full page) */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl text-white font-bold">All Posters</h2>
+              <div className="flex items-center gap-3">
+                <span className="text-slate-400 text-sm">{postersStatus}</span>
+                <Button onClick={handleRefreshAllPosters} className="bg-slate-700/30 hover:bg-slate-700/50 text-white border-0 px-3 py-1 text-sm">
+                  {postersLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Refresh All"}
+                </Button>
+              </div>
+            </div>
+
+            {postersLoading ? (
+              <div className="text-slate-400">Loading...</div>
+            ) : postersAll.length === 0 ? (
+              <div className="text-slate-400">No posters found</div>
+            ) : (
+              <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+                {postersAll.map((p) => (
+                  <div key={p.id} className="bg-slate-800/50 rounded p-2 text-center">
+                    <img src={p.poster} alt={`poster-${p.id}`} className="w-full h-20 object-cover rounded mb-2" />
+                    <div className="flex gap-1 justify-center">
+                      <Button onClick={() => fetchMetadataAndGenerate(p.id)} className="bg-gradient-to-r from-red-600 to-red-800 hover:opacity-90 text-white border-0 px-3 py-1 text-xs">
+                        Fetch
+                      </Button>
+                      <Button onClick={() => setId(p.id)} variant="outline" className="px-2 py-1 text-xs">
+                        Use
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Error Alert */}
           {error && (
             <Alert className="mb-8 bg-red-500/10 border-red-500/50">
@@ -960,7 +995,7 @@ export default function Netflix() {
                               <span>⏱️ {episode.duration}</span>
                               {episode.completed === "1" && (
                                 <span className="text-green-400">
-                                  ��� Watched
+                                  ✓ Watched
                                 </span>
                               )}
                             </div>
