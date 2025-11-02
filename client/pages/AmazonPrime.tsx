@@ -342,6 +342,31 @@ export default function AmazonPrime() {
             </div>
           </form>
 
+          {/* Save Location for Amazon Prime */}
+          <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 mb-8">
+            <label className="block text-white font-semibold mb-2">Save Location</label>
+            <div className="flex gap-3">
+              <Input
+                type="text"
+                placeholder="Base folder path"
+                value={savePath}
+                onChange={(e) => setSavePath(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500"
+                disabled={saving}
+              />
+              <Button
+                onClick={handleSavePath}
+                disabled={saving}
+                className="bg-gradient-to-r from-blue-600 to-blue-800 hover:opacity-90 text-white border-0 px-8"
+              >
+                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Save"}
+              </Button>
+            </div>
+            {saveStatus && (
+              <p className="text-slate-400 text-sm mt-2">{saveStatus}</p>
+            )}
+          </div>
+
           {/* Error Alert */}
           {error && (
             <Alert className="mb-8 bg-red-500/10 border-red-500/50">
