@@ -363,6 +363,7 @@ export default function Netflix() {
     setData(null);
     setSelectedSeason(null);
     setEpisodes([]);
+    setShowPosters(false);
 
     try {
       const response = await fetch(`/api/netflix?id=${encodeURIComponent(idToSearch)}`);
