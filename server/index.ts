@@ -50,6 +50,9 @@ export function createServer() {
 
   app.get("/api/demo", handleDemo);
 
+  // Search routes
+  app.get("/api/search", handleUnifiedSearch);
+
   // Cookie routes
   app.get("/api/fetch-cookie", handleFetchCookie);
   app.get("/api/cookie-status", handleCookieStatus);
