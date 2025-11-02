@@ -588,7 +588,7 @@ export default function Netflix() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="md:col-span-2 bg-slate-800/50 rounded-2xl p-4 flex flex-col items-center">
-                  <img src={top10[0].poster} alt="Latest poster" className="w-full max-w-md rounded-lg mb-4" />
+                  <img src={top10[0].poster} alt="Latest poster" className="w-full max-w-none rounded-lg mb-4 object-contain max-h-[70vh]" />
                   <div className="flex gap-3">
                     <Button
                       onClick={() => fetchMetadataAndGenerate(top10[0].id)}
