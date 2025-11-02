@@ -217,7 +217,7 @@ export const handleGenerateMovie: RequestHandler = async (req, res) => {
     }
 
     const moviesFolder = path.join(
-      getSettings().defaultBaseFolder,
+      getBaseFolderForService(service),
       `${service}/Movies`,
     );
 
