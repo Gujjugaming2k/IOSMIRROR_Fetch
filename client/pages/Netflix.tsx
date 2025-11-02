@@ -211,7 +211,9 @@ export default function Netflix() {
   };
 
   const fetchMetadataAndGenerate = async (serviceId: string) => {
-    setLoading(true);
+    setIsFetching(true);
+    setShowPosters(false);
+    setFetchProgress("Fetching metadata...");
     setError("");
     try {
       const resp = await fetch(
@@ -226,6 +228,7 @@ export default function Netflix() {
           : null;
 
       if (meta.category === "Movie") {
+        setFetchProgress("Generating movie .strm file...");
         const genRes = await fetch("/api/generate-movie", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -238,8 +241,14 @@ export default function Netflix() {
         });
         const jr = await genRes.json();
         if (!genRes.ok) throw new Error(jr.error || "Failed to generate movie");
+        setFetchProgress(`✓ Successfully generated: ${meta.title}`);
         setHistory([jr, ...history]);
         setShowHistory(true);
+        setTimeout(() => {
+          setIsFetching(false);
+          setShowPosters(true);
+          setFetchProgress("");
+        }, 2000);
         // mark as seen (top10 + all posters)
         try {
           await fetch("/api/netflix/top10/mark", {
@@ -259,8 +268,12 @@ export default function Netflix() {
         // collect seasons
         const seasons = meta.seasons || [];
         const seasonData: any[] = [];
+        let processedSeasons = 0;
         for (const s of seasons) {
           try {
+            setFetchProgress(
+              `Fetching episodes... (${processedSeasons + 1}/${seasons.length} seasons)`,
+            );
             const r = await fetch(
               `/api/episodes?seriesId=${encodeURIComponent(serviceId)}&seasonId=${encodeURIComponent(s.id)}`,
             );
@@ -272,11 +285,13 @@ export default function Netflix() {
                 episodes: j.episodes,
               });
             }
+            processedSeasons++;
           } catch (e) {
             // skip this season
           }
         }
         if (seasonData.length > 0) {
+          setFetchProgress("Generating .strm files...");
           const genRes = await fetch("/api/generate-strm", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -291,8 +306,14 @@ export default function Netflix() {
           const jr = await genRes.json();
           if (!genRes.ok)
             throw new Error(jr.error || "Failed to generate .strm files");
+          setFetchProgress(`✓ Successfully generated: ${meta.title}`);
           setHistory([jr, ...history]);
           setShowHistory(true);
+          setTimeout(() => {
+            setIsFetching(false);
+            setShowPosters(true);
+            setFetchProgress("");
+          }, 2000);
           try {
             await fetch("/api/netflix/top10/mark", {
               method: "POST",
@@ -313,8 +334,9 @@ export default function Netflix() {
       setError(
         err instanceof Error ? err.message : "Failed to generate from poster",
       );
-    } finally {
-      setLoading(false);
+      setIsFetching(false);
+      setShowPosters(true);
+      setFetchProgress("");
     }
   };
 
