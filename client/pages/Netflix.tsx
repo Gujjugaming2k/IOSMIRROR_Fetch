@@ -174,6 +174,10 @@ export default function Netflix() {
         if (!genRes.ok) throw new Error(jr.error || "Failed to generate movie");
         setHistory([jr, ...history]);
         setShowHistory(true);
+        // mark as seen
+        try {
+          await fetch("/api/netflix/top10/mark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [serviceId] }) });
+        } catch (_) {}
       } else if (meta.category === "Series") {
         // collect seasons
         const seasons = meta.seasons || [];
@@ -887,7 +891,7 @@ export default function Netflix() {
                               <span>⏱️ {episode.duration}</span>
                               {episode.completed === "1" && (
                                 <span className="text-green-400">
-                                  ��� Watched
+                                  ✓ Watched
                                 </span>
                               )}
                             </div>
