@@ -366,7 +366,9 @@ export default function Netflix() {
     setShowPosters(false);
 
     try {
-      const response = await fetch(`/api/netflix?id=${encodeURIComponent(idToSearch)}`);
+      const response = await fetch(
+        `/api/netflix?id=${encodeURIComponent(idToSearch)}`,
+      );
 
       const data = await response.json();
 
