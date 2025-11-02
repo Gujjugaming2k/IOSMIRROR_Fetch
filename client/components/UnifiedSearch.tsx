@@ -18,47 +18,21 @@ export default function UnifiedSearch() {
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
 
-  const searchNetflix = async (searchQuery: string) => {
+  const performSearch = async (searchQuery: string) => {
     try {
       const response = await fetch(
-        `https://net20.cc/search.php?s=${encodeURIComponent(searchQuery)}`
+        `/api/search?q=${encodeURIComponent(searchQuery)}`
       );
-      const data = await response.json();
 
-      if (data.searchResult && Array.isArray(data.searchResult)) {
-        return data.searchResult.map((item: any) => ({
-          id: item.id,
-          title: item.t,
-          provider: "netflix" as const,
-          year: item.y,
-          duration: item.r,
-        }));
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
-      return [];
-    } catch (err) {
-      console.error("Netflix search error:", err);
-      return [];
-    }
-  };
 
-  const searchPrime = async (searchQuery: string) => {
-    try {
-      const response = await fetch(
-        `https://net20.cc/pv/search.php?s=${encodeURIComponent(searchQuery)}`
-      );
       const data = await response.json();
-
-      if (data.searchResult && Array.isArray(data.searchResult)) {
-        return data.searchResult.map((item: any) => ({
-          id: item.id,
-          title: item.t,
-          provider: "prime" as const,
-        }));
-      }
-      return [];
+      return data.results || [];
     } catch (err) {
-      console.error("Prime search error:", err);
-      return [];
+      console.error("Search error:", err);
+      throw err;
     }
   };
 
