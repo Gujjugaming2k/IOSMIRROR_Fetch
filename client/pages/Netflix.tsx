@@ -511,7 +511,7 @@ export default function Netflix() {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-2xl mx-auto px-6 py-12">
+        <div className="w-full max-w-full mx-0 px-6 py-12">
           {/* Search Form */}
           <form onSubmit={handleSearch} className="mb-12">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700">
