@@ -156,17 +156,17 @@ export default function UnifiedSearch() {
               {results.map((result) => (
                 <div
                   key={`${result.provider}-${result.id}`}
-                  className="bg-slate-900/30 border border-slate-700 hover:border-slate-500 rounded-lg overflow-hidden transition-all hover:bg-slate-900/50 hover:shadow-lg"
+                  className="bg-slate-900/30 border border-slate-700 hover:border-slate-500 rounded-lg overflow-hidden transition-all hover:bg-slate-900/50 hover:shadow-lg flex flex-col"
                 >
-                  <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 aspect-video overflow-hidden">
+                  <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 aspect-[2/3] overflow-hidden flex-shrink-0">
                     {result.poster ? (
                       <img
                         src={result.poster}
                         alt={result.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src =
-                            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23374151' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='18' fill='%239CA3AF' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+                            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Crect fill='%23374151' width='400' height='600'/%3E%3Ctext x='50%25' y='50%25' font-size='18' fill='%239CA3AF' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
                         }}
                       />
                     ) : (
