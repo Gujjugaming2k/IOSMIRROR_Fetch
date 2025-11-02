@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useCookie } from "@/hooks/useCookie";
 import { useToken } from "@/hooks/useToken";
 import { useState } from "react";
+import UnifiedSearch from "@/components/UnifiedSearch";
 
 export default function Index() {
   const { tHash, loading, error, fetchCookie, hasCookie, clearCookie } =
@@ -164,6 +165,9 @@ export default function Index() {
             Search for movies and series across your favorite streaming
             platforms
           </p>
+
+          {/* Unified Search Box */}
+          <UnifiedSearch />
 
           {/* Fetch Cookie and Token Buttons */}
           <div className="max-w-2xl mx-auto mb-12 space-y-4">

@@ -32,6 +32,11 @@ import {
   handleRefreshAllPosters,
   handleMarkAllPosters,
 } from "./routes/net51";
+import {
+  handleUnifiedSearch,
+  handleNetflixSearch,
+  handlePrimeSearch,
+} from "./routes/search";
 
 export function createServer() {
   const app = express();
@@ -48,6 +53,11 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // Search routes
+  app.get("/api/search", handleUnifiedSearch);
+  app.get("/api/search/netflix", handleNetflixSearch);
+  app.get("/api/search/prime", handlePrimeSearch);
 
   // Cookie routes
   app.get("/api/fetch-cookie", handleFetchCookie);
