@@ -3,6 +3,9 @@ import * as path from "path";
 
 export interface AppSettings {
   defaultBaseFolder: string;
+  netflixBaseFolder?: string;
+  amazonPrimeBaseFolder?: string;
+  jioHotstarBaseFolder?: string;
 }
 
 const DATA_DIR = path.join(process.cwd(), "server", "data");
@@ -23,14 +26,30 @@ export function getSettings(): AppSettings {
     if (fs.existsSync(SETTINGS_PATH)) {
       const raw = fs.readFileSync(SETTINGS_PATH, "utf-8");
       const parsed = JSON.parse(raw);
-      // Basic shape validation and fallback
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        typeof parsed.defaultBaseFolder === "string" &&
-        parsed.defaultBaseFolder.length > 0
-      ) {
-        return parsed as AppSettings;
+      if (parsed && typeof parsed === "object") {
+        const base: AppSettings = {
+          defaultBaseFolder:
+            typeof parsed.defaultBaseFolder === "string" &&
+            parsed.defaultBaseFolder.length > 0
+              ? parsed.defaultBaseFolder
+              : DEFAULT_SETTINGS.defaultBaseFolder,
+          netflixBaseFolder:
+            typeof parsed.netflixBaseFolder === "string" &&
+            parsed.netflixBaseFolder.length > 0
+              ? parsed.netflixBaseFolder
+              : undefined,
+          amazonPrimeBaseFolder:
+            typeof parsed.amazonPrimeBaseFolder === "string" &&
+            parsed.amazonPrimeBaseFolder.length > 0
+              ? parsed.amazonPrimeBaseFolder
+              : undefined,
+          jioHotstarBaseFolder:
+            typeof parsed.jioHotstarBaseFolder === "string" &&
+            parsed.jioHotstarBaseFolder.length > 0
+              ? parsed.jioHotstarBaseFolder
+              : undefined,
+        };
+        return base;
       }
     }
   } catch (e) {
@@ -39,14 +58,44 @@ export function getSettings(): AppSettings {
   return { ...DEFAULT_SETTINGS };
 }
 
-export function setSettings(next: AppSettings): AppSettings {
-  const toWrite: AppSettings = {
-    defaultBaseFolder:
-      next.defaultBaseFolder && next.defaultBaseFolder.trim().length > 0
-        ? path.resolve(next.defaultBaseFolder.trim())
-        : DEFAULT_SETTINGS.defaultBaseFolder,
+export function setSettings(next: Partial<AppSettings>): AppSettings {
+  // Start from current settings and merge
+  const current = getSettings();
+  const merged: AppSettings = {
+    defaultBaseFolder: current.defaultBaseFolder,
+    netflixBaseFolder: current.netflixBaseFolder,
+    amazonPrimeBaseFolder: current.amazonPrimeBaseFolder,
+    jioHotstarBaseFolder: current.jioHotstarBaseFolder,
   };
+
+  const setPath = (val?: string) =>
+    val && val.trim().length > 0 ? path.resolve(val.trim()) : undefined;
+
+  if (typeof next.defaultBaseFolder === "string") {
+    merged.defaultBaseFolder =
+      setPath(next.defaultBaseFolder) || DEFAULT_SETTINGS.defaultBaseFolder;
+  }
+  if (typeof next.netflixBaseFolder === "string") {
+    merged.netflixBaseFolder = setPath(next.netflixBaseFolder);
+  }
+  if (typeof next.amazonPrimeBaseFolder === "string") {
+    merged.amazonPrimeBaseFolder = setPath(next.amazonPrimeBaseFolder);
+  }
+  if (typeof next.jioHotstarBaseFolder === "string") {
+    merged.jioHotstarBaseFolder = setPath(next.jioHotstarBaseFolder);
+  }
+
   ensureDataDir();
-  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(toWrite, null, 2), "utf-8");
-  return toWrite;
+  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(merged, null, 2), "utf-8");
+  return merged;
+}
+
+export function getBaseFolderForService(service: string): string {
+  const s = getSettings();
+  const map: Record<string, string | undefined> = {
+    netflix: s.netflixBaseFolder,
+    "amazon-prime": s.amazonPrimeBaseFolder,
+    "jio-hotstar": s.jioHotstarBaseFolder,
+  };
+  return path.resolve(map[service] || s.defaultBaseFolder);
 }

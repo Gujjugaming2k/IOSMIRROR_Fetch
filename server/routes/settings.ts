@@ -7,13 +7,31 @@ export const handleGetSettings: RequestHandler = (_req, res) => {
 };
 
 export const handleUpdateSettings: RequestHandler = (req, res) => {
-  const { defaultBaseFolder } = req.body || {};
-  if (typeof defaultBaseFolder !== "string" || defaultBaseFolder.length === 0) {
+  const {
+    defaultBaseFolder,
+    netflixBaseFolder,
+    amazonPrimeBaseFolder,
+    jioHotstarBaseFolder,
+  } = req.body || {};
+
+  const hasAny = [
+    defaultBaseFolder,
+    netflixBaseFolder,
+    amazonPrimeBaseFolder,
+    jioHotstarBaseFolder,
+  ].some((v) => typeof v === "string");
+
+  if (!hasAny) {
     return res
       .status(400)
-      .json({ success: false, error: "defaultBaseFolder is required" });
+      .json({ success: false, error: "No valid settings provided" });
   }
 
-  const saved = setSettings({ defaultBaseFolder });
+  const saved = setSettings({
+    defaultBaseFolder,
+    netflixBaseFolder,
+    amazonPrimeBaseFolder,
+    jioHotstarBaseFolder,
+  });
   res.status(200).json({ success: true, settings: saved });
 };

@@ -51,6 +51,76 @@ export default function AmazonPrime() {
   const [history, setHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
+  // Per-service save location (Amazon Prime)
+  const [savePath, setSavePath] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("");
+
+  // load settings and cached posters
+  const [slider, setSlider] = useState<Array<any>>([]);
+  const [postersAll, setPostersAll] = useState<
+    Array<{ id: string; poster: string; cate?: string; seen?: boolean }>
+  >([]);
+  const [postersLoading, setPostersLoading] = useState(false);
+  const [postersStatus, setPostersStatus] = useState("");
+  const [showPosters, setShowPosters] = useState(true);
+
+  // Fetching state for progress display
+  const [isFetching, setIsFetching] = useState(false);
+  const [fetchProgress, setFetchProgress] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/settings");
+        const json = await res.json();
+        if (json && json.settings) {
+          const s = json.settings;
+          setSavePath(s.amazonPrimeBaseFolder || s.defaultBaseFolder || "");
+        }
+      } catch (_) {
+        // ignore
+      }
+
+      // load cached posters
+      setPostersLoading(true);
+      try {
+        const r = await fetch("/api/amazon-prime/posters");
+        const j = await r.json();
+        if (j && Array.isArray(j.items)) {
+          setPostersAll(j.items || []);
+        }
+        if (j && Array.isArray(j.slider)) {
+          setSlider(j.slider || []);
+        }
+      } catch (_) {
+        // ignore
+      } finally {
+        setPostersLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const handleSavePath = async () => {
+    setSaving(true);
+    setSaveStatus("");
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amazonPrimeBaseFolder: savePath }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Failed");
+      setSaveStatus("Saved");
+    } catch (_) {
+      setSaveStatus("Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Cookie/token hooks (auto-fetch to improve UX)
   const {
     tHash,
@@ -79,6 +149,140 @@ export default function AmazonPrime() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleRefreshPosters = async () => {
+    setPostersStatus("");
+    setPostersLoading(true);
+    try {
+      const r = await fetch("/api/amazon-prime/posters/refresh", {
+        method: "POST",
+      });
+      const j = await r.json();
+      if (!r.ok || !j.success) throw new Error(j.error || "Refresh failed");
+      setPostersAll(j.items || []);
+      setSlider(j.slider || []);
+      setPostersStatus(j.newCount ? `${j.newCount} new` : "Up to date");
+    } catch (e) {
+      setPostersStatus("Refresh failed");
+    } finally {
+      setPostersLoading(false);
+      setTimeout(() => setPostersStatus(""), 3000);
+    }
+  };
+
+  const fetchMetadataAndGenerateFromAmazon = async (serviceId: string) => {
+    setIsFetching(true);
+    setShowPosters(false);
+    setFetchProgress("Fetching metadata...");
+    setError("");
+    try {
+      const resp = await fetch(
+        `/api/amazon-prime?id=${encodeURIComponent(serviceId)}`,
+      );
+      const meta = await resp.json();
+      if (!resp.ok) throw new Error(meta.error || "Failed to fetch metadata");
+
+      const primeToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("prime_token")
+          : null;
+
+      if (meta.category === "Movie") {
+        setFetchProgress("Generating movie .strm file...");
+        const genRes = await fetch("/api/generate-movie", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            service: "amazon-prime",
+            movieName: meta.title,
+            movieId: serviceId,
+            primeToken: primeToken || null,
+          }),
+        });
+        const jr = await genRes.json();
+        if (!genRes.ok) throw new Error(jr.error || "Failed to generate movie");
+        setFetchProgress(`✓ Successfully generated: ${meta.title}`);
+        setHistory([jr, ...history]);
+        setShowHistory(true);
+        setTimeout(() => {
+          setIsFetching(false);
+          setShowPosters(true);
+          setFetchProgress("");
+        }, 2000);
+        try {
+          await fetch("/api/amazon-prime/posters/mark", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: [serviceId] }),
+          });
+        } catch (_) {}
+      } else if (meta.category === "Series") {
+        const seasons = meta.seasons || [];
+        const seasonData: any[] = [];
+        let processedSeasons = 0;
+        for (const s of seasons) {
+          try {
+            setFetchProgress(
+              `Fetching episodes... (${processedSeasons + 1}/${seasons.length} seasons)`,
+            );
+            const r = await fetch(
+              `/api/episodes?seriesId=${encodeURIComponent(serviceId)}&seasonId=${encodeURIComponent(s.id)}&service=amazon-prime`,
+            );
+            const j = await r.json();
+            if (r.ok && j.episodes) {
+              seasonData.push({
+                number: s.number,
+                id: s.id,
+                episodes: j.episodes,
+              });
+            }
+            processedSeasons++;
+          } catch (e) {
+            // skip
+          }
+        }
+        if (seasonData.length > 0) {
+          setFetchProgress("Generating .strm files...");
+          const genRes = await fetch("/api/generate-strm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              service: "amazon-prime",
+              seriesName: meta.title,
+              seriesId: serviceId,
+              seasons: seasonData,
+              primeToken: primeToken || null,
+            }),
+          });
+          const jr = await genRes.json();
+          if (!genRes.ok)
+            throw new Error(jr.error || "Failed to generate .strm files");
+          setFetchProgress(`✓ Successfully generated: ${meta.title}`);
+          setHistory([jr, ...history]);
+          setShowHistory(true);
+          setTimeout(() => {
+            setIsFetching(false);
+            setShowPosters(true);
+            setFetchProgress("");
+          }, 2000);
+          try {
+            await fetch("/api/amazon-prime/posters/mark", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ids: [serviceId] }),
+            });
+          } catch (_) {}
+        }
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to generate from poster",
+      );
+      setIsFetching(false);
+      setShowPosters(true);
+      setFetchProgress("");
+    }
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -268,7 +472,7 @@ export default function AmazonPrime() {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-2xl mx-auto px-6 py-12">
+        <div className="w-full max-w-full mx-0 px-6 py-12">
           {/* Search Form */}
           <form onSubmit={handleSearch} className="mb-12">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700">
@@ -301,6 +505,335 @@ export default function AmazonPrime() {
               </div>
             </div>
           </form>
+
+          {/* Save Location for Amazon Prime */}
+          <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 mb-8">
+            <label className="block text-white font-semibold mb-2">
+              Save Location
+            </label>
+            <div className="flex gap-3">
+              <Input
+                type="text"
+                placeholder="Base folder path"
+                value={savePath}
+                onChange={(e) => setSavePath(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500"
+                disabled={saving}
+              />
+              <Button
+                onClick={handleSavePath}
+                disabled={saving}
+                className="bg-gradient-to-r from-blue-600 to-blue-800 hover:opacity-90 text-white border-0 px-8"
+              >
+                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Save"}
+              </Button>
+            </div>
+            {saveStatus && (
+              <p className="text-slate-400 text-sm mt-2">{saveStatus}</p>
+            )}
+          </div>
+
+          {/* Poster Controls - Always visible */}
+          {!isFetching && (
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl text-white font-bold">
+                {showPosters ? "Featured" : "Posters"}
+              </h2>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => setShowPosters(!showPosters)}
+                  className="bg-slate-700/30 hover:bg-slate-700/50 text-white border-0 px-3 py-1 text-sm"
+                >
+                  {showPosters ? "Hide Posters" : "Show Posters"}
+                </Button>
+                {showPosters && (
+                  <>
+                    <span className="text-slate-400 text-sm">
+                      {postersStatus}
+                    </span>
+                    <Button
+                      onClick={handleRefreshPosters}
+                      className="bg-slate-700/30 hover:bg-slate-700/50 text-white border-0 px-3 py-1 text-sm"
+                    >
+                      {postersLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Refresh"
+                      )}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Progress Display or Featured Slider and Posters */}
+          {isFetching ? (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl text-white font-bold">Processing</h2>
+                <Button
+                  onClick={() => setShowPosters(!showPosters)}
+                  className="bg-slate-700/30 hover:bg-slate-700/50 text-white border-0 px-3 py-1 text-sm"
+                >
+                  {showPosters ? "Hide Posters" : "Show Posters"}
+                </Button>
+              </div>
+              <div className="bg-slate-800/50 rounded-2xl p-8 border border-blue-500/30 flex flex-col items-center justify-center min-h-96">
+                <Loader2 className="w-16 h-16 animate-spin text-blue-400 mb-6" />
+                <p className="text-white text-lg font-semibold text-center">
+                  {fetchProgress}
+                </p>
+              </div>
+            </div>
+          ) : showPosters ? (
+            <div className="mb-8">
+              {postersLoading ? (
+                <div className="text-slate-400">Loading...</div>
+              ) : slider.length === 0 ? (
+                <div className="text-slate-400">No featured items</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="md:col-span-2 bg-slate-800/50 rounded-2xl p-4 flex flex-col items-center">
+                    <img
+                      src={slider[0].poster}
+                      alt="Featured poster"
+                      className="w-full max-w-none rounded-lg mb-4 object-contain max-h-[70vh]"
+                    />
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() =>
+                          fetchMetadataAndGenerateFromAmazon(slider[0].id)
+                        }
+                        disabled={loading || isFetching}
+                        className="bg-gradient-to-r from-blue-600 to-blue-800 hover:opacity-90 text-white border-0 px-6"
+                      >
+                        {loading || isFetching ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          "Fetch & Add .strm"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {slider.slice(0, 9).map((item: any) => (
+                        <div
+                          key={item.id}
+                          className="bg-slate-800/50 rounded-lg p-2 text-center"
+                        >
+                          <img
+                            src={item.poster}
+                            alt={`poster-${item.id}`}
+                            className="w-full h-56 object-contain rounded mb-2"
+                          />
+                          <div className="flex gap-2 justify-center">
+                            <Button
+                              onClick={() =>
+                                fetchMetadataAndGenerateFromAmazon(item.id)
+                              }
+                              disabled={loading || isFetching}
+                              className="bg-gradient-to-r from-blue-600 to-blue-800 hover:opacity-90 text-white border-0 px-4 py-1 text-sm"
+                            >
+                              Fetch
+                            </Button>
+                            <Button
+                              onClick={() => setId(item.id)}
+                              variant="outline"
+                              className="px-4 py-1 text-sm"
+                            >
+                              Use ID
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          {/* All Posters (full page) */}
+          {showPosters && !isFetching && (
+            <div className="mb-8">
+              {postersLoading ? (
+                <div className="text-slate-400">Loading...</div>
+              ) : postersAll.length === 0 ? (
+                <div className="text-slate-400">No posters found</div>
+              ) : (
+                <div className="grid grid-cols-5 md:grid-cols-8 gap-3">
+                  {postersAll.map((p) => (
+                    <div
+                      key={p.id}
+                      className="bg-slate-800/50 rounded p-2 text-center"
+                    >
+                      <img
+                        src={p.poster}
+                        alt={`poster-${p.id}`}
+                        className="w-full h-40 object-contain rounded mb-2"
+                      />
+                      <div className="flex gap-1 justify-center">
+                        <Button
+                          onClick={() =>
+                            fetchMetadataAndGenerateFromAmazon(p.id)
+                          }
+                          disabled={loading || isFetching}
+                          className="bg-gradient-to-r from-blue-600 to-blue-800 hover:opacity-90 text-white border-0 px-3 py-1 text-xs"
+                        >
+                          Fetch
+                        </Button>
+                        <Button
+                          onClick={() => setId(p.id)}
+                          variant="outline"
+                          className="px-2 py-1 text-xs"
+                        >
+                          Use
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* History Toggle Button */}
+          {history.length > 0 && (
+            <Button
+              onClick={() => setShowHistory(!showHistory)}
+              variant="outline"
+              className="w-full border-slate-600 text-white hover:bg-slate-800 mt-6"
+            >
+              {showHistory ? "Hide" : "Show"} Generation History (
+              {history.length})
+            </Button>
+          )}
+
+          {/* History Section */}
+          {showHistory && history.length > 0 && (
+            <div className="mt-8 space-y-4 animate-in fade-in duration-300">
+              {history.map((result, historyIdx) => {
+                const isMovie = result.movieName && result.file;
+                const isSeries =
+                  result.seriesName && result.seasons && result.seasons.length;
+
+                return (
+                  <div
+                    key={historyIdx}
+                    className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-amber-500/30 shadow-lg shadow-amber-500/20"
+                  >
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="bg-amber-500/20 rounded-full p-3">
+                        {isMovie ? (
+                          <Film className="w-6 h-6 text-amber-400" />
+                        ) : (
+                          <Tv className="w-6 h-6 text-amber-400" />
+                        )}
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-white">
+                          {result.movieName || result.seriesName}
+                        </h2>
+                        <p className="text-slate-400 text-sm">
+                          {isMovie ? "Movie" : "Series"} •{" "}
+                          {new Date(result.generatedAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Movie Display */}
+                    {isMovie && (
+                      <div className="space-y-4">
+                        <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                          <p className="text-slate-400 text-xs mb-3">
+                            {result.folderPath}
+                          </p>
+
+                          <div className="bg-slate-800/50 rounded p-3 text-center">
+                            <p className="text-sm font-bold text-white mb-1">
+                              {result.file.fileName}
+                            </p>
+                            <p className="text-xs text-green-400">
+                              ✓ Generated
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Series Display */}
+                    {isSeries && (
+                      <>
+                        <div className="bg-slate-700/30 rounded-lg p-4 mb-6">
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-slate-400 text-xs font-medium mb-1">
+                                TOTAL FILES
+                              </p>
+                              <p className="text-2xl font-bold text-green-400">
+                                {result.totalFilesCreated}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400 text-xs font-medium mb-1">
+                                SEASONS PROCESSED
+                              </p>
+                              <p className="text-2xl font-bold text-blue-400">
+                                {result.totalSeasonsProcessed}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          {result.seasons.map((season, idx) => (
+                            <div
+                              key={idx}
+                              className="bg-slate-700/50 rounded-lg p-4 border border-slate-600"
+                            >
+                              <div className="flex items-center gap-3 mb-3">
+                                <Tv className="w-4 h-4 text-slate-400" />
+                                <h3 className="text-white font-semibold flex-grow">
+                                  Season {season.seasonNumber}
+                                </h3>
+                                <span className="bg-purple-500/30 text-purple-300 px-3 py-1 rounded-full text-sm font-bold">
+                                  {season.totalEpisodes} Episodes
+                                </span>
+                              </div>
+
+                              <p className="text-slate-400 text-xs mb-3">
+                                {season.folderPath}
+                              </p>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                {season.files.map((file, fileIdx) => (
+                                  <div
+                                    key={fileIdx}
+                                    className="bg-slate-800/50 rounded p-2 text-center hover:bg-slate-800 transition-colors cursor-pointer"
+                                    title={file.streamUrl}
+                                  >
+                                    <p className="text-xs font-bold text-white">
+                                      {file.fileName}
+                                    </p>
+                                    <p className="text-xs text-slate-500 truncate">
+                                      ✓ Generated
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Error Alert */}
           {error && (

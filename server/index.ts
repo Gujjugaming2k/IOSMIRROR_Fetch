@@ -3,7 +3,12 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { handleNetflix } from "./routes/netflix";
-import { handleAmazonPrime } from "./routes/amazon-prime";
+import {
+  handleAmazonPrime,
+  handleGetAmazonPrimePosters,
+  handleRefreshAmazonPrimePosters,
+  handleMarkAmazonPrimePosters,
+} from "./routes/amazon-prime";
 import { handleJioHotstar } from "./routes/jio-hotstar";
 import {
   handleFetchCookie,
@@ -19,6 +24,14 @@ import {
   handleGenerateMovie,
 } from "./routes/streaming";
 import { handleGetSettings, handleUpdateSettings } from "./routes/settings";
+import {
+  handleGetCachedTop10,
+  handleRefreshTop10,
+  handleMarkTop10,
+  handleGetAllPosters,
+  handleRefreshAllPosters,
+  handleMarkAllPosters,
+} from "./routes/net51";
 
 export function createServer() {
   const app = express();
@@ -57,6 +70,24 @@ export function createServer() {
   // Settings routes
   app.get("/api/settings", handleGetSettings);
   app.post("/api/settings", handleUpdateSettings);
+
+  // Net51 top10 routes (cached)
+  app.get("/api/netflix/top10", handleGetCachedTop10);
+  app.post("/api/netflix/top10/refresh", handleRefreshTop10);
+  app.post("/api/netflix/top10/mark", handleMarkTop10);
+
+  // All posters routes
+  app.get("/api/netflix/posters", handleGetAllPosters);
+  app.post("/api/netflix/posters/refresh", handleRefreshAllPosters);
+  app.post("/api/netflix/posters/mark", handleMarkAllPosters);
+
+  // Amazon Prime posters (cached)
+  app.get("/api/amazon-prime/posters", handleGetAmazonPrimePosters);
+  app.post(
+    "/api/amazon-prime/posters/refresh",
+    handleRefreshAmazonPrimePosters,
+  );
+  app.post("/api/amazon-prime/posters/mark", handleMarkAmazonPrimePosters);
 
   return app;
 }

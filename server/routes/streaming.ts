@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import * as fs from "fs";
 import * as path from "path";
-import { getSettings } from "../utils/settings";
+import { getSettings, getBaseFolderForService } from "../utils/settings";
 
 export interface StreamingDetail {
   id: string;
@@ -29,7 +29,7 @@ const generateFolderPath = (
   seasonNumber: string,
 ): string => {
   const cleanSeriesName = seriesName.trim();
-  const base = getSettings().defaultBaseFolder;
+  const base = getBaseFolderForService(service);
   return path.join(
     base,
     `${service}/Series/${cleanSeriesName}/Season ${seasonNumber}`,
@@ -217,7 +217,7 @@ export const handleGenerateMovie: RequestHandler = async (req, res) => {
     }
 
     const moviesFolder = path.join(
-      getSettings().defaultBaseFolder,
+      getBaseFolderForService(service),
       `${service}/Movies`,
     );
 
