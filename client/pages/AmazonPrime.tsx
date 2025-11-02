@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,7 +15,6 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCookie } from "@/hooks/useCookie";
 import { useToken } from "@/hooks/useToken";
-import { useEffect } from "react";
 
 interface Season {
   id: string;
@@ -39,6 +38,7 @@ interface PrimeData {
 }
 
 export default function AmazonPrime() {
+  const [searchParams] = useSearchParams();
   const [id, setId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -149,6 +149,14 @@ export default function AmazonPrime() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const idParam = searchParams.get("id");
+    if (idParam) {
+      setId(idParam);
+      handleSearch({ preventDefault: () => {} } as React.FormEvent, idParam);
+    }
+  }, [searchParams]);
 
   const handleRefreshPosters = async () => {
     setPostersStatus("");
@@ -284,10 +292,11 @@ export default function AmazonPrime() {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = async (e: React.FormEvent, searchId?: string) => {
+    e.preventDefault?.();
 
-    if (!id.trim()) {
+    const idToSearch = searchId || id;
+    if (!idToSearch.trim()) {
       setError("Please enter an ID");
       return;
     }
@@ -295,10 +304,11 @@ export default function AmazonPrime() {
     setLoading(true);
     setError("");
     setData(null);
+    setShowPosters(false);
 
     try {
       const response = await fetch(
-        `/api/amazon-prime?id=${encodeURIComponent(id)}`,
+        `/api/amazon-prime?id=${encodeURIComponent(idToSearch)}`,
       );
 
       const data = await response.json();

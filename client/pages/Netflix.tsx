@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -81,6 +81,7 @@ interface StrmGenerationResult {
 }
 
 export default function Netflix() {
+  const [searchParams] = useSearchParams();
   const [id, setId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -154,6 +155,14 @@ export default function Netflix() {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    const idParam = searchParams.get("id");
+    if (idParam) {
+      setId(idParam);
+      handleSearch({ preventDefault: () => {} } as React.FormEvent, idParam);
+    }
+  }, [searchParams]);
 
   const handleRefreshTop10 = async () => {
     setTopStatus("");
@@ -340,10 +349,11 @@ export default function Netflix() {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = async (e: React.FormEvent, searchId?: string) => {
+    e.preventDefault?.();
 
-    if (!id.trim()) {
+    const idToSearch = searchId || id;
+    if (!idToSearch.trim()) {
       setError("Please enter an ID");
       return;
     }
@@ -353,9 +363,12 @@ export default function Netflix() {
     setData(null);
     setSelectedSeason(null);
     setEpisodes([]);
+    setShowPosters(false);
 
     try {
-      const response = await fetch(`/api/netflix?id=${encodeURIComponent(id)}`);
+      const response = await fetch(
+        `/api/netflix?id=${encodeURIComponent(idToSearch)}`,
+      );
 
       const data = await response.json();
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Loader2, AlertCircle, Play, Film } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +14,13 @@ interface SearchResult {
 }
 
 export default function UnifiedSearch() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
+  const [fetchingId, setFetchingId] = useState<string | null>(null);
 
   const performSearch = async (searchQuery: string) => {
     try {
@@ -66,8 +69,24 @@ export default function UnifiedSearch() {
     }
   };
 
+  const fetchContent = async (result: SearchResult) => {
+    setFetchingId(`${result.provider}-${result.id}`);
+
+    try {
+      if (result.provider === "netflix") {
+        navigate(`/netflix?id=${encodeURIComponent(result.id)}`);
+      } else {
+        navigate(`/amazon-prime?id=${encodeURIComponent(result.id)}`);
+      }
+    } catch (err) {
+      console.error("Navigation error:", err);
+    } finally {
+      setFetchingId(null);
+    }
+  };
+
   return (
-    <div className="w-full max-w-4xl mx-auto px-6 mb-16">
+    <div className="w-full max-w-6xl mx-auto px-6 mb-16">
       <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-8 border border-slate-700 backdrop-blur-sm">
         <h2 className="text-2xl font-bold text-white mb-6">
           Search Netflix & Prime
@@ -113,41 +132,87 @@ export default function UnifiedSearch() {
 
         {results.length > 0 && (
           <div className="mt-8">
-            <h3 className="text-lg font-semibold text-white mb-4">
+            <h3 className="text-lg font-semibold text-white mb-6">
               Results ({results.length})
             </h3>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {results.map((result) => (
                 <div
                   key={`${result.provider}-${result.id}`}
-                  className="bg-slate-900/30 border border-slate-700 hover:border-slate-500 rounded-lg p-4 transition-colors hover:bg-slate-900/50"
+                  className="bg-slate-900/30 border border-slate-700 hover:border-slate-500 rounded-lg overflow-hidden transition-all hover:bg-slate-900/50 hover:shadow-lg flex flex-col"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium truncate">
-                        {result.title}
-                      </p>
-                      <p className="text-slate-400 text-sm">
-                        ID: <span className="font-mono">{result.id}</span>
-                      </p>
-                      {result.year && (
-                        <p className="text-slate-500 text-xs mt-1">
-                          {result.year}
-                          {result.duration && ` • ${result.duration}`}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex-shrink-0">
+                  <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 aspect-[2/3] overflow-hidden flex-shrink-0">
+                    {result.poster ? (
+                      <img
+                        src={result.poster}
+                        alt={result.title}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Crect fill='%23374151' width='400' height='600'/%3E%3Ctext x='50%25' y='50%25' font-size='18' fill='%239CA3AF' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-400">
+                        No Image
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2">
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                           result.provider === "netflix"
-                            ? "bg-red-500/20 text-red-300 border border-red-500/30"
-                            : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                            ? "bg-red-600 text-white"
+                            : "bg-blue-600 text-white"
                         }`}
                       >
                         {result.provider === "netflix" ? "Netflix" : "Prime"}
                       </span>
                     </div>
+                  </div>
+
+                  <div className="p-4">
+                    <h4 className="text-white font-semibold text-sm mb-1 truncate">
+                      {result.title}
+                    </h4>
+                    <p className="text-slate-400 text-xs mb-3">
+                      ID: <span className="font-mono">{result.id}</span>
+                    </p>
+
+                    {(result.year || result.duration) && (
+                      <p className="text-slate-500 text-xs mb-3">
+                        {result.year}
+                        {result.duration && ` • ${result.duration}`}
+                      </p>
+                    )}
+
+                    <Button
+                      onClick={() => fetchContent(result)}
+                      disabled={
+                        fetchingId === `${result.provider}-${result.id}`
+                      }
+                      className={`w-full py-2 text-sm font-semibold transition-all ${
+                        result.provider === "netflix"
+                          ? "bg-gradient-to-r from-red-600 to-red-800 hover:opacity-90"
+                          : "bg-gradient-to-r from-blue-600 to-blue-800 hover:opacity-90"
+                      } text-white border-0`}
+                    >
+                      {fetchingId === `${result.provider}-${result.id}` ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin mr-2 inline" />
+                          Opening...
+                        </>
+                      ) : result.provider === "netflix" ? (
+                        <>
+                          <Play className="w-3 h-3 mr-2 inline" />
+                          Open Netflix
+                        </>
+                      ) : (
+                        <>
+                          <Film className="w-3 h-3 mr-2 inline" />
+                          Open Prime
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               ))}
