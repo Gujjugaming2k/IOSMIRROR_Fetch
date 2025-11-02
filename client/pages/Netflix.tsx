@@ -604,7 +604,7 @@ export default function Netflix() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {top10.slice(0, 9).map((item) => (
                       <div key={item.id} className="bg-slate-800/50 rounded-lg p-2 text-center">
-                        <img src={item.poster} alt={`poster-${item.id}`} className="w-full h-40 object-cover rounded mb-2" />
+                        <img src={item.poster} alt={`poster-${item.id}`} className="w-full h-56 object-contain rounded mb-2" />
                         <div className="flex gap-2 justify-center">
                           <Button
                             onClick={() => fetchMetadataAndGenerate(item.id)}
