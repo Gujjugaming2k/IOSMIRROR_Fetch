@@ -59,5 +59,8 @@ export function createServer() {
   app.get("/api/settings", handleGetSettings);
   app.post("/api/settings", handleUpdateSettings);
 
+  // Net51 top10 route
+  app.get("/api/netflix/top10", handleNet51Top10);
+
   return app;
 }
