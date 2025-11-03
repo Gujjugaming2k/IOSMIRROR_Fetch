@@ -170,6 +170,28 @@ export default function Index() {
           {/* Unified Search Box */}
           <UnifiedSearch />
 
+          {/* History Preview Card */}
+          <div className="max-w-2xl mx-auto mb-6">
+            <div className="bg-slate-800/40 rounded-2xl p-4 border border-slate-700">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-slate-900/30 rounded-full flex items-center justify-center">
+                    <Play className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-300 font-semibold">Recent History</div>
+                    <div className="text-xs text-slate-400">Shows recent movies & series you generated</div>
+                  </div>
+                </div>
+                <Link to="/history" className="text-sm text-slate-300 hover:text-white underline">
+                  View Full History
+                </Link>
+              </div>
+
+              <RecentHistoryPreview />
+            </div>
+          </div>
+
           {/* Fetch Cookie and Token Buttons */}
           <div className="max-w-2xl mx-auto mb-12 space-y-4">
             {(error || tokenError) && (
