@@ -115,9 +115,13 @@ async function fetchHomeHtml() {
 
 export const handleGetCachedTop10: RequestHandler = (_req, res) => {
   const cache = readCache();
+  const items = (cache.items || []).map((it: any) => ({
+    ...it,
+    poster: wrapPosterUrl(it.poster) || it.poster,
+  }));
   res.json({
     success: true,
-    items: cache.items || [],
+    items,
     lastUpdated: cache.lastUpdated || 0,
   });
 };
