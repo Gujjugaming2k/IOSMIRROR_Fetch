@@ -24,10 +24,21 @@ export const sendTelegramNotification = async (
       }),
     });
 
-    const result = await response.json();
+    let result: any = {};
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      console.warn("Failed to parse telegram response:", parseError);
+    }
 
-    if (!response.ok || !result.success) {
-      console.error("Telegram notification failed:", result.error);
+    if (!response.ok) {
+      console.warn("Telegram notification returned non-200 status:", response.status);
+      // Don't show error toast for failed notification - it's not critical
+      return false;
+    }
+
+    if (result?.success === false) {
+      console.warn("Telegram notification failed:", result.error);
       return false;
     }
 
@@ -39,11 +50,8 @@ export const sendTelegramNotification = async (
 
     return true;
   } catch (error) {
-    console.error("Error sending telegram notification:", error);
-    toast({
-      title: "Error",
-      description: "Failed to send notification",
-    });
+    console.warn("Error sending telegram notification:", error);
+    // Don't show toast on error - notification failure is not critical
     return false;
   }
 };
