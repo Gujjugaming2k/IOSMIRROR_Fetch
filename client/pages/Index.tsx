@@ -16,6 +16,7 @@ import { useToken } from "@/hooks/useToken";
 import { useState } from "react";
 import UnifiedSearch from "@/components/UnifiedSearch";
 import { loadHistory, HistoryItem } from "@/lib/history";
+import RecentHistoryPreview from "@/components/RecentHistoryPreview";
 
 export default function Index() {
   const { tHash, loading, error, fetchCookie, hasCookie, clearCookie } =
