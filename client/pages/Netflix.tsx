@@ -580,6 +580,13 @@ export default function Netflix() {
       setHistory([result, ...history]);
       addMovieHistory(result, "netflix");
       setShowHistory(true);
+
+      // Send telegram notification
+      await sendTelegramNotification({
+        name: data.title,
+        provider: "netflix",
+        message: `${data.title} - Netflix movie generated`,
+      });
     } catch (err) {
       setError(
         err instanceof Error
@@ -1232,7 +1239,7 @@ export default function Netflix() {
                               {episode.description}
                             </p>
                             <div className="flex items-center gap-4 text-xs text-slate-500">
-                              <span>⏱️ {episode.duration}</span>
+                              <span>��️ {episode.duration}</span>
                               {episode.completed === "1" && (
                                 <span className="text-green-400">
                                   ✓ Watched
