@@ -530,6 +530,13 @@ export default function Netflix() {
       setHistory([result, ...history]);
       addSeriesHistory(result, "netflix");
       setShowHistory(true);
+
+      // Send telegram notification
+      await sendTelegramNotification({
+        name: data?.title || "Unknown",
+        provider: "netflix",
+        message: `${data?.title || "Unknown"} - Netflix series generated`,
+      });
     } catch (err) {
       setError(
         err instanceof Error
