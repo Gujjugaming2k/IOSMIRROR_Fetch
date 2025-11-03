@@ -288,6 +288,14 @@ export default function AmazonPrime() {
           setHistory([jr, ...history]);
           addSeriesHistory(jr, "amazon-prime");
           setShowHistory(true);
+
+          // Send telegram notification
+          await sendTelegramNotification({
+            name: meta.title,
+            provider: "prime",
+            message: `${meta.title} - Amazon Prime series added (${seasonData.length} seasons)`,
+          });
+
           setTimeout(() => {
             setIsFetching(false);
             setShowPosters(true);
