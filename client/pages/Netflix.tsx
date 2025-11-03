@@ -176,6 +176,8 @@ export default function Netflix() {
       const j = await r.json();
       if (!r.ok || !j.success) throw new Error(j.error || "Refresh failed");
       setTop10(j.items.slice(0, 10));
+      const unseen = (j.items || []).filter((i: any) => !i.seen).slice(0, 10);
+      setNewTop(unseen);
       setTopStatus(j.newCount ? `${j.newCount} new` : "Up to date");
     } catch (e) {
       setTopStatus("Refresh failed");
