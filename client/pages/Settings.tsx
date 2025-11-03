@@ -43,12 +43,19 @@ export default function Settings() {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ defaultBaseFolder }),
+        body: JSON.stringify({
+          defaultBaseFolder,
+          telegramToken,
+          telegramChannelId,
+        }),
       });
       const data: SettingsResponse = await res.json();
       if (data.success) {
         setDefaultBaseFolder(data.settings.defaultBaseFolder);
+        setTelegramToken(data.settings.telegramToken || "");
+        setTelegramChannelId(data.settings.telegramChannelId || "");
         setStatus("Saved");
+        setTimeout(() => setStatus(null), 3000);
       } else {
         setStatus(data.error || "Failed");
       }
