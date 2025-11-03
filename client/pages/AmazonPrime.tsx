@@ -173,6 +173,8 @@ export default function AmazonPrime() {
       if (!r.ok || !j.success) throw new Error(j.error || "Refresh failed");
       setPostersAll(j.items || []);
       setSlider(j.slider || []);
+      const unseen = (j.items || []).filter((i: any) => !i.seen).slice(0, 8);
+      setNewFound(unseen);
       setPostersStatus(j.newCount ? `${j.newCount} new` : "Up to date");
     } catch (e) {
       setPostersStatus("Refresh failed");
