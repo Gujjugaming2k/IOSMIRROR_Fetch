@@ -12,6 +12,8 @@ export const handleUpdateSettings: RequestHandler = (req, res) => {
     netflixBaseFolder,
     amazonPrimeBaseFolder,
     jioHotstarBaseFolder,
+    telegramToken,
+    telegramChannelId,
   } = req.body || {};
 
   const hasAny = [
@@ -19,6 +21,8 @@ export const handleUpdateSettings: RequestHandler = (req, res) => {
     netflixBaseFolder,
     amazonPrimeBaseFolder,
     jioHotstarBaseFolder,
+    telegramToken,
+    telegramChannelId,
   ].some((v) => typeof v === "string");
 
   if (!hasAny) {
@@ -32,6 +36,8 @@ export const handleUpdateSettings: RequestHandler = (req, res) => {
     netflixBaseFolder,
     amazonPrimeBaseFolder,
     jioHotstarBaseFolder,
+    telegramToken,
+    telegramChannelId,
   });
   res.status(200).json({ success: true, settings: saved });
 };
