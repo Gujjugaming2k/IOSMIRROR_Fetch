@@ -12,6 +12,7 @@ import {
   Film,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { addMovieHistory, addSeriesHistory } from "@/lib/history";
 import { useCookie } from "@/hooks/useCookie";
 import { useToken } from "@/hooks/useToken";
 import { useEffect, useState } from "react";
@@ -256,6 +257,7 @@ export default function JioHotstar() {
         throw new Error(result.error || "Failed to generate .strm files");
 
       setHistory([result, ...history]);
+      addSeriesHistory(result, "jio-hotstar");
       setShowHistory(true);
     } catch (err) {
       setError(
@@ -292,6 +294,7 @@ export default function JioHotstar() {
       if (!response.ok)
         throw new Error(result.error || "Failed to generate movie file");
 
+      addMovieHistory(result, "jio-hotstar");
       setSuccessMsg(
         `Generated ${result.file?.fileName || "file"} in ${result.folderPath || "Movies folder"}`,
       );

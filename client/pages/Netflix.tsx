@@ -16,6 +16,7 @@ import {
   Film,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { addMovieHistory, addSeriesHistory } from "@/lib/history";
 
 interface Season {
   id: string;
@@ -252,6 +253,7 @@ export default function Netflix() {
         if (!genRes.ok) throw new Error(jr.error || "Failed to generate movie");
         setFetchProgress(`✓ Successfully generated: ${meta.title}`);
         setHistory([jr, ...history]);
+        addMovieHistory(jr, "netflix");
         setShowHistory(true);
         setTimeout(() => {
           setIsFetching(false);
@@ -317,6 +319,7 @@ export default function Netflix() {
             throw new Error(jr.error || "Failed to generate .strm files");
           setFetchProgress(`✓ Successfully generated: ${meta.title}`);
           setHistory([jr, ...history]);
+          addSeriesHistory(jr, "netflix");
           setShowHistory(true);
           setTimeout(() => {
             setIsFetching(false);
@@ -503,6 +506,7 @@ export default function Netflix() {
       }
 
       setHistory([result, ...history]);
+      addSeriesHistory(result, "netflix");
       setShowHistory(true);
     } catch (err) {
       setError(
@@ -545,6 +549,7 @@ export default function Netflix() {
       }
 
       setHistory([result, ...history]);
+      addMovieHistory(result, "netflix");
       setShowHistory(true);
     } catch (err) {
       setError(

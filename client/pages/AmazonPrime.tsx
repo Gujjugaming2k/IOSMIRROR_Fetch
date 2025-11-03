@@ -13,6 +13,7 @@ import {
   Film,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { addMovieHistory, addSeriesHistory } from "@/lib/history";
 import { useCookie } from "@/hooks/useCookie";
 import { useToken } from "@/hooks/useToken";
 
@@ -211,6 +212,7 @@ export default function AmazonPrime() {
         if (!genRes.ok) throw new Error(jr.error || "Failed to generate movie");
         setFetchProgress(`✓ Successfully generated: ${meta.title}`);
         setHistory([jr, ...history]);
+        addMovieHistory(jr, "amazon-prime");
         setShowHistory(true);
         setTimeout(() => {
           setIsFetching(false);
@@ -267,6 +269,7 @@ export default function AmazonPrime() {
             throw new Error(jr.error || "Failed to generate .strm files");
           setFetchProgress(`✓ Successfully generated: ${meta.title}`);
           setHistory([jr, ...history]);
+          addSeriesHistory(jr, "amazon-prime");
           setShowHistory(true);
           setTimeout(() => {
             setIsFetching(false);
@@ -444,6 +447,7 @@ export default function AmazonPrime() {
       }
 
       setHistory([result, ...history]);
+      addSeriesHistory(result, "amazon-prime");
       setShowHistory(true);
     } catch (err) {
       setError(
@@ -972,6 +976,7 @@ export default function AmazonPrime() {
                             result.error || "Failed to generate movie file",
                           );
 
+                        addMovieHistory(result, "amazon-prime");
                         setSuccessMsg(
                           `Generated ${result.file?.fileName || "file"} in ${result.folderPath || "Movies folder"}`,
                         );
