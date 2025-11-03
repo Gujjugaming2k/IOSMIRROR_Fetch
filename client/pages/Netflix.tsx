@@ -261,6 +261,14 @@ export default function Netflix() {
         setHistory([jr, ...history]);
         addMovieHistory(jr, "netflix");
         setShowHistory(true);
+
+        // Send telegram notification
+        await sendTelegramNotification({
+          name: meta.title,
+          provider: "netflix",
+          message: `${meta.title} - Netflix movie added`,
+        });
+
         setTimeout(() => {
           setIsFetching(false);
           setShowPosters(true);
