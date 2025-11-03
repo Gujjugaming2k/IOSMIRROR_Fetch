@@ -1,4 +1,4 @@
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/hooks/use-toast";
 
 interface TelegramNotifyParams {
   name: string;
@@ -28,20 +28,13 @@ export const sendTelegramNotification = async (
 
     if (!response.ok || !result.success) {
       console.error("Telegram notification failed:", result.error);
-      // Show error toast
-      toast({
-        title: "Notification Error",
-        description: "Failed to send notification. Check your settings.",
-        duration: 3000,
-      });
       return false;
     }
 
     // Show success toast that auto-disappears
     toast({
-      title: "Added",
-      description: `${params.name} - Telegram notification sent`,
-      duration: 2000,
+      title: "Added ✓",
+      description: `${params.name} added to ${params.provider === "netflix" ? "Netflix" : "Prime"}`,
     });
 
     return true;
@@ -50,7 +43,6 @@ export const sendTelegramNotification = async (
     toast({
       title: "Error",
       description: "Failed to send notification",
-      duration: 3000,
     });
     return false;
   }
