@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { getSettings } from "../utils/settings";
 
 function decodeBase64(value?: string | null): string | null {
   if (!value) return null;
@@ -13,10 +14,15 @@ export const handleTelegramNotify: RequestHandler = async (req, res) => {
   try {
     const { name, provider, image, message } = req.body || {};
 
+    const settings = getSettings();
     const encodedToken =
-      process.env.ENCODED_TOKEN || process.env.ENCODED_TELEGRAM_TOKEN;
+      process.env.ENCODED_TOKEN ||
+      process.env.ENCODED_TELEGRAM_TOKEN ||
+      settings.telegramToken;
     const encodedChatId =
-      process.env.ENCODED_CHANNEL_ID || process.env.ENCODED_TELEGRAM_CHANNEL_ID;
+      process.env.ENCODED_CHANNEL_ID ||
+      process.env.ENCODED_TELEGRAM_CHANNEL_ID ||
+      settings.telegramChannelId;
 
     const botToken = decodeBase64(encodedToken);
     const chatId = decodeBase64(encodedChatId);
