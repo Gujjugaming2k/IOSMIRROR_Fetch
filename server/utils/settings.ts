@@ -80,6 +80,8 @@ export function setSettings(next: Partial<AppSettings>): AppSettings {
     netflixBaseFolder: current.netflixBaseFolder,
     amazonPrimeBaseFolder: current.amazonPrimeBaseFolder,
     jioHotstarBaseFolder: current.jioHotstarBaseFolder,
+    telegramToken: current.telegramToken,
+    telegramChannelId: current.telegramChannelId,
   };
 
   const setPath = (val?: string) =>
@@ -97,6 +99,12 @@ export function setSettings(next: Partial<AppSettings>): AppSettings {
   }
   if (typeof next.jioHotstarBaseFolder === "string") {
     merged.jioHotstarBaseFolder = setPath(next.jioHotstarBaseFolder);
+  }
+  if (typeof next.telegramToken === "string") {
+    merged.telegramToken = next.telegramToken.trim() || undefined;
+  }
+  if (typeof next.telegramChannelId === "string") {
+    merged.telegramChannelId = next.telegramChannelId.trim() || undefined;
   }
 
   ensureDataDir();
