@@ -37,6 +37,7 @@ import {
   handleNetflixSearch,
   handlePrimeSearch,
 } from "./routes/search";
+import { handleTelegramNotify } from "./routes/telegram";
 
 export function createServer() {
   const app = express();
