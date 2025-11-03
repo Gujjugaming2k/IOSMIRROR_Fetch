@@ -50,7 +50,7 @@ const searchNetflix = async (query: string): Promise<SearchResult[]> => {
         id: item.id,
         title: item.t,
         provider: "netflix" as const,
-        poster: `https://imgcdn.kim/poster/v/${item.id}.jpg`,
+        poster: `https://wsrv.nl/?url=https://imgcdn.kim/poster/v/${encodeURIComponent(item.id)}.jpg&w=500`,
         year: item.y,
         duration: item.r,
       }));
