@@ -6,6 +6,8 @@ export interface AppSettings {
   netflixBaseFolder?: string;
   amazonPrimeBaseFolder?: string;
   jioHotstarBaseFolder?: string;
+  telegramToken?: string;
+  telegramChannelId?: string;
 }
 
 const DATA_DIR = path.join(process.cwd(), "server", "data");
@@ -13,6 +15,8 @@ const SETTINGS_PATH = path.join(DATA_DIR, "settings.json");
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultBaseFolder: path.join(process.cwd(), "OTT"),
+  telegramToken: "NzUzMTYzNzg0NTpBQUYzR3hIbjFXYXBtX3gzeEsxYzlFOHBxbkFtZ3RCbGpBYw==",
+  telegramChannelId: "LTEwMDI4NzM0NTQ4MTk=",
 };
 
 function ensureDataDir() {
