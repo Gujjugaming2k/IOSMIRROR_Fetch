@@ -184,7 +184,10 @@ export default function AmazonPrime() {
     }
   };
 
-  const fetchMetadataAndGenerateFromAmazon = async (serviceId: string) => {
+  const fetchMetadataAndGenerateFromAmazon = async (
+    serviceId: string,
+    poster?: string,
+  ) => {
     setIsFetching(true);
     setShowPosters(false);
     setFetchProgress("Fetching metadata...");

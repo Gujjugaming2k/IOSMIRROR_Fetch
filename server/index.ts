@@ -37,6 +37,7 @@ import {
   handleNetflixSearch,
   handlePrimeSearch,
 } from "./routes/search";
+import { handleTelegramNotify } from "./routes/telegram";
 
 export function createServer() {
   const app = express();
@@ -98,6 +99,9 @@ export function createServer() {
     handleRefreshAmazonPrimePosters,
   );
   app.post("/api/amazon-prime/posters/mark", handleMarkAmazonPrimePosters);
+
+  // Notifications
+  app.post("/api/notify/telegram", handleTelegramNotify);
 
   return app;
 }
