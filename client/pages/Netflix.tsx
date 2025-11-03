@@ -104,6 +104,9 @@ export default function Netflix() {
   >([]);
   const [topLoading, setTopLoading] = useState(false);
   const [topStatus, setTopStatus] = useState("");
+  const [newTop, setNewTop] = useState<
+    Array<{ id: string; poster: string; seen?: boolean }>
+  >([]);
 
   // All posters (full page)
   const [postersAll, setPostersAll] = useState<
