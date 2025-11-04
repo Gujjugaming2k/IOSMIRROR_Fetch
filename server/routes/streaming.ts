@@ -43,23 +43,14 @@ const generateStrmContent = (
   service: string = "netflix",
 ): string => {
   const episodeId = episode.id;
-  // Use provided prime token or fall back to hardcoded token
-  let token =
-    primeToken ||
-    "in=1df163a49286a7c854f2b07e8a995bfa::913b431120b4fd2ec3d4bfd587867697::1761993038::ni";
 
-  // Normalize the final segment to 'ni' when a token is provided
-  if (primeToken) {
-    token = token.replace(/::[a-zA-Z]+$/i, "::ni");
-  }
+  // Map service names to proxy service parameter
+  let proxyService = service;
+  if (service === "amazon-prime") proxyService = "prime";
+  if (service === "jio-hotstar") proxyService = "jio";
 
-  // Determine correct path segment for service
-  const baseDomain = "net51.cc";
-  let pathSegment = "hls";
-  if (service === "amazon-prime") pathSegment = "pv/hls";
-  if (service === "jio-hotstar") pathSegment = "mobile/hs/hls";
-
-  return `https://iosmirror.vflix.life/api/stream-proxy?url=https://${baseDomain}/${pathSegment}/${episodeId}.m3u8?${token}&referer=https%3A%2F%2Fnet51.cc`;
+  // Return new proxy URL format
+  return `https://fetch.vflix.life/api/proxy?service=${proxyService}&id=${episodeId}`;
 };
 
 // Ensure directory exists (create if not)
