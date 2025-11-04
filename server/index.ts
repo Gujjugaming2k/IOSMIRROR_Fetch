@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { handleNetflix } from "./routes/netflix";
+import { handleProxy } from "./routes/proxy";
 import {
   handleAmazonPrime,
   handleGetAmazonPrimePosters,
@@ -54,6 +55,9 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // Proxy route
+  app.get("/api/proxy", handleProxy);
 
   // Search routes
   app.get("/api/search", handleUnifiedSearch);
