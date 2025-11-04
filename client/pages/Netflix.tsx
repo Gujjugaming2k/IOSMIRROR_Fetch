@@ -18,6 +18,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { addMovieHistory, addSeriesHistory } from "@/lib/history";
 import { sendTelegramNotification } from "@/lib/telegram-notify";
+import { buildProxyUrl } from "@/lib/proxy";
 
 interface Season {
   id: string;
