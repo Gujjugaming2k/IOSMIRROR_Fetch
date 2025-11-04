@@ -20,13 +20,20 @@ export const handleProxy: RequestHandler = async (req, res) => {
 
     // Construct the target URL based on service
     let targetUrl: string;
+    let refererUrl: string = DEFAULT_REFERER;
 
     if (service === "netflix") {
       targetUrl = `${NETFLIX_BASE_URL}/${id}.m3u8`;
+    } else if (service === "amazon-prime" || service === "prime") {
+      targetUrl = `https://net51.cc/pv/hls/${id}.m3u8`;
+      refererUrl = "https://net51.cc";
+    } else if (service === "jio-hotstar" || service === "jio") {
+      targetUrl = `https://net51.cc/mobile/hs/hls/${id}.m3u8`;
+      refererUrl = "https://net51.cc";
     } else {
       return res.status(400).json({
         success: false,
-        error: `Unsupported service: ${service}. Currently supported: netflix`,
+        error: `Unsupported service: ${service}. Currently supported: netflix, amazon-prime, prime, jio-hotstar, jio`,
       });
     }
 
@@ -40,7 +47,7 @@ export const handleProxy: RequestHandler = async (req, res) => {
     }
 
     // Construct the referer header value
-    const referer = req.query.referer || DEFAULT_REFERER;
+    const referer = req.query.referer || refererUrl;
 
     // Build the full proxy URL with the format:
     // https://iosmirror.vflix.life/api/stream-proxy?url=https://net51.cc/hls/70270776.m3u8?in=...&referer=...
