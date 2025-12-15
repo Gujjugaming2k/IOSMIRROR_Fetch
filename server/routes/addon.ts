@@ -107,7 +107,10 @@ export const handleStremioStream: RequestHandler = async (req, res) => {
                 const epData = await epResp.json();
                 // epData.episodes is array of { id, episode, title, ... }
 
-                const targetEp = epData.episodes?.find((e: any) => parseInt(e.episode) === parseInt(episodeStr));
+                const targetEp = epData.episodes?.find((e: any) => {
+                    const epNum = parseInt(e.ep.replace(/[^0-9]/g, ""));
+                    return epNum === parseInt(episodeStr);
+                });
 
                 if (targetEp) {
                     streamUrl = `https://fetch.vflix.life/api/proxy?service=netflix&id=${targetEp.id}`;
@@ -151,7 +154,10 @@ export const handleStremioStream: RequestHandler = async (req, res) => {
                 });
 
                 const epData = await epResp.json();
-                const targetEp = epData.episodes?.find((e: any) => parseInt(e.episode) === parseInt(episodeStr));
+                const targetEp = epData.episodes?.find((e: any) => {
+                    const epNum = parseInt(e.ep.replace(/[^0-9]/g, ""));
+                    return epNum === parseInt(episodeStr);
+                });
 
                 if (targetEp) {
                     streamUrl = `https://fetch.vflix.life/api/proxy?service=prime&id=${targetEp.id}`;
