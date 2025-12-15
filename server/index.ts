@@ -107,5 +107,24 @@ export function createServer() {
   // Notifications
   app.post("/api/notify/telegram", handleTelegramNotify);
 
+  // Stremio Addon Routes
+  // The user requested: url/prime/stream/movie/{{id}}.json
+  // express will handle :service/stream/:type/:id.json
+  // We need to support both :id (internal) and :id (tt...) inside the handler
+
+  const { handleStremioStream } = require("./routes/addon");
+
+  // Prime routes
+  app.get("/prime/stream/:type/:id.json", (req, res, next) => {
+    (req.params as any).service = "prime";
+    handleStremioStream(req, res, next);
+  });
+
+  // Netflix routes
+  app.get("/netflix/stream/:type/:id.json", (req, res, next) => {
+    (req.params as any).service = "netflix";
+    handleStremioStream(req, res, next);
+  });
+
   return app;
 }
