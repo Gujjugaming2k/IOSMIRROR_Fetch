@@ -162,7 +162,7 @@ export const handleStremioStream: RequestHandler = async (req, res) => {
 
             } else {
                 // Movie - Prime movies also use valid IDs directly
-                streamUrl = `https://ifetch.vflix.life/api/proxy?service=prime&id=${internalId}`;
+                streamUrl = `https://fetch.vflix.life/api/proxy?service=prime&id=${internalId}`;
             }
         }
 
