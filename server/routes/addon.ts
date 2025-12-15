@@ -113,7 +113,7 @@ export const handleStremioStream: RequestHandler = async (req, res) => {
                 });
 
                 if (targetEp) {
-                    streamUrl = `https://fetch.vflix.life/api/proxy?service=netflix&id=${targetEp.id}`;
+                    streamUrl = `https://fetch.vflix.life/api/direct-stream?service=netflix&id=${targetEp.id}`;
                     title += ` S${seasonStr}E${episodeStr} - ${targetEp.title || "Episode " + episodeStr}`;
                 } else {
                     console.log("Episode not found in season list");
@@ -122,7 +122,7 @@ export const handleStremioStream: RequestHandler = async (req, res) => {
 
             } else {
                 // Movie
-                streamUrl = `https://fetch.vflix.life/api/proxy?service=netflix&id=${internalId}`;
+                streamUrl = `https://fetch.vflix.life/api/direct-stream?service=netflix&id=${internalId}`;
             }
 
         } else if (service === "prime") {
@@ -160,7 +160,7 @@ export const handleStremioStream: RequestHandler = async (req, res) => {
                 });
 
                 if (targetEp) {
-                    streamUrl = `https://fetch.vflix.life/api/proxy?service=prime&id=${targetEp.id}`;
+                    streamUrl = `https://fetch.vflix.life/api/direct-stream?service=prime&id=${targetEp.id}`;
                     title += ` S${seasonStr}E${episodeStr} - ${targetEp.title || "Episode " + episodeStr}`;
                 } else {
                     return res.json({ streams: [] });
@@ -168,7 +168,7 @@ export const handleStremioStream: RequestHandler = async (req, res) => {
 
             } else {
                 // Movie - Prime movies also use valid IDs directly
-                streamUrl = `https://fetch.vflix.life/api/proxy?service=prime&id=${internalId}`;
+                streamUrl = `https://fetch.vflix.life/api/direct-stream?service=prime&id=${internalId}`;
             }
         }
 
