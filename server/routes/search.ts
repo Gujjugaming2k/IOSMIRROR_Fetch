@@ -26,7 +26,7 @@ interface PrimeSearchResponse {
   }>;
 }
 
-const searchNetflix = async (query: string): Promise<SearchResult[]> => {
+export const searchNetflix = async (query: string): Promise<SearchResult[]> => {
   try {
     const response = await fetch(
       `https://net20.cc/search.php?s=${encodeURIComponent(query)}`,
@@ -62,7 +62,7 @@ const searchNetflix = async (query: string): Promise<SearchResult[]> => {
   }
 };
 
-const searchPrime = async (query: string): Promise<SearchResult[]> => {
+export const searchPrime = async (query: string): Promise<SearchResult[]> => {
   try {
     const response = await fetch(
       `https://net20.cc/pv/search.php?s=${encodeURIComponent(query)}`,

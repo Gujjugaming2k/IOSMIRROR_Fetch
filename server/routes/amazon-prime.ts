@@ -15,6 +15,7 @@ interface AmazonPrimeResponse {
   year: string;
   languages: string;
   category: "Movie" | "Series";
+  lang?: any[]; // Allow lang to be passed through
 }
 
 import * as fs from "fs";
@@ -94,12 +95,12 @@ export const handleRefreshAmazonPrimePosters: RequestHandler = async (
 
     const slider: any[] = Array.isArray(json.slider)
       ? json.slider.map((s: any) => ({
-          id: s.id || null,
-          poster: s.img || null,
-          desc: s.desc || "",
-          ua: s.ua || "",
-          namelogo: s.namelogo || null,
-        }))
+        id: s.id || null,
+        poster: s.img || null,
+        desc: s.desc || "",
+        ua: s.ua || "",
+        namelogo: s.namelogo || null,
+      }))
       : [];
 
     // flatten post ids into individual poster entries
@@ -180,61 +181,48 @@ export const handleMarkAmazonPrimePosters: RequestHandler = (req, res) => {
   }
 };
 
-export const handleAmazonPrime: RequestHandler = async (req, res) => {
-  const { id } = req.query;
-
-  if (!id || typeof id !== "string") {
-    return res.status(400).json({ error: "Missing or invalid ID" });
-  }
+export const getPrimeDetails = async (
+  id: string,
+  cookieHeader: string | null = null,
+): Promise<AmazonPrimeAPIResponse | null> => {
+  const fetchOptions: RequestInit = {
+    method: "GET",
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Accept: "application/json",
+      "Accept-Language": "en-US,en;q=0.9",
+      Referer: "https://net51.cc/",
+      ...(cookieHeader && { Cookie: cookieHeader }),
+    },
+  };
 
   try {
-    // Get all cookies formatted for the Cookie header
-    const cookieHeader = await getTHash();
-
-    const fetchOptions: RequestInit = {
-      method: "GET",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Accept: "application/json",
-        "Accept-Language": "en-US,en;q=0.9",
-        Referer: "https://net51.cc/",
-        ...(cookieHeader && { Cookie: cookieHeader }),
-      },
-    };
-
-    // Use the same scraping approach as Netflix but targeting net20.cc/pv/post.php
     const url = `https://net20.cc/pv/post.php?id=${encodeURIComponent(id)}`;
     const response = await fetch(url, fetchOptions);
 
     const text = await response.text();
-
-    if (!text) {
-      return res.status(500).json({ error: "Empty response from API" });
-    }
+    if (!text) return null;
 
     let jsonData: any;
     try {
       jsonData = JSON.parse(text);
     } catch (e) {
-      console.error("Amazon parse error:", e, "Text:", text.substring(0, 300));
-      return res.status(500).json({ error: "Invalid JSON response from API" });
+      console.error("Amazon parse error:", e);
+      return null;
     }
 
-    // Determine if it's a movie or series
     const isSeriesData =
       Array.isArray(jsonData.season) && jsonData.season.length > 0;
     const category = isSeriesData ? "Series" : "Movie";
 
-    // Extract languages
     const languagesArray = jsonData.lang || [];
     const languages = Array.isArray(languagesArray)
       ? languagesArray
-          .map((lang) => (typeof lang === "string" ? lang : lang.l || lang))
-          .join(", ")
+        .map((lang) => (typeof lang === "string" ? lang : lang.l || lang))
+        .join(", ")
       : "Unknown";
 
-    // Process seasons similarly to Netflix parsing to provide IDs and counts
     let seasons: any[] | undefined;
     if (isSeriesData && Array.isArray(jsonData.season)) {
       seasons = await Promise.all(
@@ -266,7 +254,6 @@ export const handleAmazonPrime: RequestHandler = async (req, res) => {
             episodeCount = season.episodes.length;
           }
 
-          // If still no count, try fetching episodes from the PV episodes endpoint
           if (episodeCount === 0) {
             try {
               const seasonId = season.id || season.sid || `${index + 1}`;
@@ -277,16 +264,12 @@ export const handleAmazonPrime: RequestHandler = async (req, res) => {
               });
               const episodeText = await episodeResponse.text();
               if (episodeText) {
-                try {
-                  const episodeData = JSON.parse(episodeText);
-                  if (
-                    episodeData.episodes &&
-                    Array.isArray(episodeData.episodes)
-                  ) {
-                    episodeCount = episodeData.episodes.length;
-                  }
-                } catch (e) {
-                  // ignore
+                const episodeData = JSON.parse(episodeText);
+                if (
+                  episodeData.episodes &&
+                  Array.isArray(episodeData.episodes)
+                ) {
+                  episodeCount = episodeData.episodes.length;
                 }
               }
             } catch (e) {
@@ -310,10 +293,31 @@ export const handleAmazonPrime: RequestHandler = async (req, res) => {
       category,
     };
 
-    // Attach seasons if we found them
     if (seasons) {
       // @ts-ignore
       (result as any).seasons = seasons;
+    }
+
+    return result as AmazonPrimeAPIResponse;
+  } catch (error) {
+    console.error("Amazon fetch error:", error);
+    return null;
+  }
+};
+
+export const handleAmazonPrime: RequestHandler = async (req, res) => {
+  const { id } = req.query;
+
+  if (!id || typeof id !== "string") {
+    return res.status(400).json({ error: "Missing or invalid ID" });
+  }
+
+  try {
+    const cookieHeader = await getTHash();
+    const result = await getPrimeDetails(id, cookieHeader);
+
+    if (!result) {
+      return res.status(500).json({ error: "Empty response from API" });
     }
 
     res.status(200).json(result);

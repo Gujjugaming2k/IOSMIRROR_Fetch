@@ -50,7 +50,7 @@ const generateStrmContent = (
   if (service === "jio-hotstar") proxyService = "jio";
 
   // Return new proxy URL format
-  return `https://fetch.vflix.life/api/proxy?service=${proxyService}&id=${episodeId}`;
+  return `https://iosmirror.vflix.life/api/proxy?service=${proxyService}&id=${episodeId}`;
 };
 
 // Ensure directory exists (create if not)
